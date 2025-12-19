@@ -24,32 +24,41 @@
             transition: all 0.2s;
         }
         .input-dark:focus { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); }
+        .input-dark:disabled { opacity: 0.5; cursor: not-allowed; }
         .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 h-screen flex overflow-hidden w-full">
 
-    <!-- SETUP HELP MODAL (Aparece se der erro de config) -->
-    <div id="setup-modal" class="fixed inset-0 z-[100] bg-black/90 hidden flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-slate-900 border border-red-500/50 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative">
-            <button onclick="document.getElementById('setup-modal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
-            <div class="flex items-center gap-3 text-red-400 mb-4">
-                <i data-lucide="alert-triangle" class="w-8 h-8"></i>
-                <h2 class="text-xl font-bold">Configuração Necessária</h2>
-            </div>
-            <p class="text-slate-300 text-sm mb-4">O Firebase bloqueou a operação. As regras do banco estão ok, mas falta ativar o Login:</p>
-            <div class="space-y-4 text-sm">
-                <div class="bg-slate-950 p-4 rounded-lg border border-slate-800">
-                    <h3 class="font-bold text-white mb-2">1. Habilitar Login (Essencial)</h3>
-                    <p class="text-slate-400">Vá no Console do Firebase em <b>Authentication > Sign-in method</b> e ative:</p>
-                    <ul class="list-disc pl-5 text-indigo-400 mt-1">
-                        <li>Email/Password (Para criar lojistas)</li>
-                        <li>Anonymous (Para este painel ler a lista de lojas)</li>
-                    </ul>
+    <!-- EDIT MODAL (Para Lojas Ativas) -->
+    <div id="edit-modal" class="fixed inset-0 z-[100] bg-black/80 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-lg w-full p-8 shadow-2xl relative animate-fade-in flex flex-col max-h-[90vh] overflow-y-auto">
+            <button onclick="closeEditModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+            <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-2"><i data-lucide="edit-3" class="w-6 h-6 text-indigo-500"></i> Editar Loja</h2>
+            <form id="editStoreForm" onsubmit="saveStoreChanges(event)" class="space-y-4">
+                <input type="hidden" id="editSlug">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Nome da Loja</label>
+                    <input type="text" id="editStoreName" required class="input-dark">
                 </div>
-            </div>
-            <button onclick="window.location.reload()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl mt-6">Já ativei, recarregar página</button>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-2">E-mail do Responsável</label>
+                    <input type="email" id="editOwnerEmail" required class="input-dark">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Dia do Vencimento</label>
+                    <input type="number" id="editBillingDay" min="1" max="31" required class="input-dark">
+                </div>
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 mt-4">
+                    <h3 class="text-sm font-bold text-white mb-2 flex items-center gap-2"><i data-lucide="key" class="w-4 h-4 text-yellow-500"></i> Segurança</h3>
+                    <button type="button" onclick="triggerPasswordReset()" id="btnResetPass" class="w-full bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold py-2.5 rounded-lg border border-slate-700 transition-colors">Enviar Link de Redefinição de Senha</button>
+                </div>
+                <div class="pt-4 flex gap-3">
+                    <button type="button" onclick="closeEditModal()" class="flex-1 py-3 bg-slate-800 text-slate-300 font-bold rounded-xl">Cancelar</button>
+                    <button type="submit" class="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-lg">Salvar</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -68,16 +77,20 @@
 
         <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
             <button onclick="switchView('list')" id="nav-list" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all bg-indigo-600/10 text-indigo-400 border border-indigo-600/50">
-                <i data-lucide="list" class="w-5 h-5"></i> Gerenciar Lojas
+                <i data-lucide="list" class="w-5 h-5"></i> Lojas Ativas
             </button>
-            <button onclick="switchView('create')" id="nav-create" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-all border border-transparent">
-                <i data-lucide="plus-circle" class="w-5 h-5"></i> Nova Loja
+            <button onclick="switchView('requests')" id="nav-requests" class="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-slate-400 hover:bg-slate-800 transition-all">
+                <div class="flex items-center gap-3"><i data-lucide="user-plus" class="w-5 h-5"></i> Solicitações</div>
+                <span id="reqCountBadge" class="hidden bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">0</span>
+            </button>
+            <button onclick="switchView('create')" id="nav-create" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-400 hover:bg-slate-800 transition-all">
+                <i data-lucide="plus-circle" class="w-5 h-5"></i> Cadastro Manual
             </button>
         </nav>
 
-        <div class="p-4 border-t border-slate-800 bg-slate-900">
+        <div class="p-4 border-t border-slate-800">
             <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-full bg-indigo-900/50 text-indigo-400 border border-indigo-500/30 flex items-center justify-center text-xs font-bold">SA</div>
+                <div class="w-8 h-8 rounded-full bg-indigo-900/50 text-indigo-400 flex items-center justify-center text-xs font-bold">SA</div>
                 <div><p class="text-xs font-bold text-white">Administrador</p><p class="text-[10px] text-slate-400">Online</p></div>
             </div>
         </div>
@@ -85,111 +98,70 @@
 
     <!-- MAIN CONTENT -->
     <main class="flex-1 flex flex-col h-screen overflow-hidden relative bg-slate-950 w-full">
-        <header class="h-16 flex items-center px-4 border-b border-slate-800 md:hidden flex-shrink-0 bg-slate-900 z-30">
-            <button onclick="toggleSidebar()" class="p-2 text-slate-300 hover:bg-slate-800 rounded-lg"><i data-lucide="menu" class="w-6 h-6"></i></button>
-            <span class="ml-3 font-bold text-lg">Painel Geral</span>
+        <header class="h-16 flex items-center px-4 border-b border-slate-800 md:hidden bg-slate-900">
+            <button onclick="toggleSidebar()" class="p-2 text-slate-300 rounded-lg"><i data-lucide="menu" class="w-6 h-6"></i></button>
+            <span class="ml-3 font-bold text-lg">Marketplace Admin</span>
         </header>
 
         <div class="flex-1 overflow-y-auto p-4 md:p-8 w-full relative">
-            <div class="fixed top-0 right-0 w-[500px] h-[500px] bg-indigo-600/5 rounded-full blur-[120px] pointer-events-none"></div>
-
-            <div class="max-w-6xl mx-auto relative z-10 pb-20">
+            <div class="max-w-6xl mx-auto pb-20">
                 
-                <!-- ERROR BANNER -->
-                <div id="error-banner" class="hidden mb-6 bg-red-500/10 border border-red-500/50 text-red-400 p-4 rounded-xl flex items-start gap-3 animate-fade-in">
-                    <i data-lucide="alert-circle" class="w-5 h-5 mt-0.5 flex-shrink-0"></i>
-                    <div>
-                        <h4 class="font-bold text-sm">Erro detectado</h4>
-                        <p id="error-msg" class="text-xs mt-1">Detalhes...</p>
+                <!-- VIEW: LISTA -->
+                <div id="view-list" class="animate-fade-in">
+                    <h2 class="text-2xl font-bold text-white mb-8">Lojas Ativas</h2>
+                    <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-slate-800 text-slate-400 text-xs uppercase font-semibold">
+                                <tr>
+                                    <th class="p-5">Loja</th>
+                                    <th class="p-5">Dia Venc.</th>
+                                    <th class="p-5">E-mail</th>
+                                    <th class="p-5">Status</th>
+                                    <th class="p-5 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="storesTableBody" class="divide-y divide-slate-800 text-sm">
+                                <tr><td colspan="5" class="p-10 text-center text-slate-500">Carregando lojas...</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
-                <!-- VIEW: LISTA -->
-                <div id="view-list" class="animate-fade-in">
-                    <div class="flex justify-between items-center mb-8">
-                        <div><h2 class="text-2xl font-bold text-white">Lojas Cadastradas</h2><p class="text-slate-400 text-sm mt-1">Visão geral do sistema.</p></div>
-                        <button onclick="forceRefresh()" class="p-2 bg-slate-800 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white transition-colors" title="Recarregar"><i data-lucide="refresh-cw" class="w-5 h-5"></i></button>
-                    </div>
-
-                    <div class="bg-slate-900 rounded-2xl border border-slate-800 shadow-xl overflow-hidden flex flex-col">
-                        <div class="overflow-x-auto w-full">
-                            <table class="w-full text-left border-collapse min-w-[800px]">
-                                <thead class="bg-slate-800 text-slate-400 text-xs uppercase font-semibold">
-                                    <tr>
-                                        <th class="p-5">Loja / ID</th>
-                                        <th class="p-5">Faturamento</th>
-                                        <th class="p-5">Login Admin</th>
-                                        <th class="p-5">Status</th>
-                                        <th class="p-5 text-right">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="storesTableBody" class="divide-y divide-slate-800 text-sm">
-                                    <tr><td colspan="5" class="p-8 text-center text-slate-500 flex flex-col items-center gap-2"><i class="animate-spin" data-lucide="loader-2"></i> Inicializando sistema...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                <!-- VIEW: SOLICITAÇÕES -->
+                <div id="view-requests" class="hidden animate-fade-in">
+                    <h2 class="text-2xl font-bold text-white mb-8">Solicitações de Cadastro</h2>
+                    <div id="requestsList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                    <div id="emptyRequests" class="hidden text-center py-20 text-slate-500">Sem solicitações pendentes.</div>
                 </div>
 
                 <!-- VIEW: CRIAR -->
                 <div id="view-create" class="hidden animate-fade-in">
-                    <div class="flex items-center gap-4 mb-6">
-                        <button onclick="switchView('list')" class="md:hidden text-slate-400"><i data-lucide="arrow-left" class="w-6 h-6"></i></button>
-                        <h2 class="text-2xl font-bold text-white">Cadastrar Nova Loja</h2>
-                    </div>
-                    
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <div class="lg:col-span-2 space-y-6">
-                            <form id="createStoreForm" class="bg-slate-900 p-6 md:p-8 rounded-3xl border border-slate-800 shadow-xl space-y-6">
-                                <div>
-                                    <h3 class="text-indigo-400 font-bold text-sm uppercase mb-4 flex items-center gap-2"><i data-lucide="store" class="w-4 h-4"></i> Dados Gerais</h3>
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div><label class="block text-xs font-bold uppercase text-slate-500 mb-2">Nome</label><input type="text" id="storeName" required class="input-dark" placeholder="Ex: Mega Loja"></div>
-                                        <div><label class="block text-xs font-bold uppercase text-slate-500 mb-2">Slug (URL)</label><input type="text" id="storeSlug" required class="input-dark font-mono text-indigo-300" placeholder="ex: mega-loja"></div>
-                                        <div>
-                                            <label class="block text-xs font-bold uppercase text-slate-500 mb-2 text-indigo-300">Dia Vencimento</label>
-                                            <div class="relative">
-                                                <input type="number" id="billingDay" min="1" max="31" required class="input-dark pl-10" placeholder="10">
-                                                <i data-lucide="calendar" class="w-4 h-4 text-slate-500 absolute left-3 top-3.5"></i>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <hr class="border-slate-800">
-                                <div>
-                                    <h3 class="text-indigo-400 font-bold text-sm uppercase mb-4 flex items-center gap-2"><i data-lucide="lock" class="w-4 h-4"></i> Credenciais</h3>
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div><label class="block text-xs font-bold uppercase text-slate-500 mb-2">Email Admin</label><input type="email" id="adminEmail" required class="input-dark" placeholder="admin@loja.com"></div>
-                                        <div><label class="block text-xs font-bold uppercase text-slate-500 mb-2">Senha</label><input type="text" id="adminPass" required class="input-dark" placeholder="Min 6 caracteres"></div>
-                                    </div>
-                                </div>
-                                <button type="submit" id="btnSubmit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-xl shadow-lg transition-all flex justify-center items-center gap-2 mt-4">
-                                    <i data-lucide="save" class="w-5 h-5"></i> Confirmar Cadastro
-                                </button>
-                            </form>
+                    <h2 class="text-2xl font-bold text-white mb-8" id="createTitle">Cadastrar Nova Loja</h2>
+                    <form id="createStoreForm" class="bg-slate-900 p-8 rounded-3xl border border-slate-800 space-y-6">
+                        <input type="hidden" id="requestId">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div><label class="block text-xs font-bold uppercase text-slate-500 mb-2">Nome da Loja</label><input type="text" id="storeName" required class="input-dark"></div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-500 mb-2">Slug (ID da URL)</label><input type="text" id="storeSlug" required class="input-dark font-mono text-indigo-300"></div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-500 mb-2">Email do Lojista</label><input type="email" id="adminEmail" required class="input-dark"></div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-500 mb-2">WhatsApp</label><input type="text" id="storePhone" required class="input-dark" placeholder="5511999999999"></div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-500 mb-2">Senha Provisória</label><input type="text" id="adminPass" required class="input-dark"></div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-500 mb-2">Dia do Vencimento</label><input type="number" id="billingDay" min="1" max="31" value="10" required class="input-dark"></div>
                         </div>
+                        <button type="submit" id="btnSubmit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-xl shadow-lg flex justify-center items-center gap-2">Confirmar e Ativar Loja</button>
+                    </form>
+                </div>
 
-                        <!-- SUCESSO -->
-                        <div class="space-y-6">
-                            <div id="resultCard" class="bg-green-500/10 border border-green-500/50 rounded-2xl p-6 hidden animate-fade-in">
-                                <h3 class="text-green-400 font-bold flex items-center gap-2 mb-4"><i data-lucide="check-circle" class="w-5 h-5"></i> Sucesso!</h3>
-                                <div class="space-y-3 text-xs">
-                                    <div class="bg-slate-900 p-3 rounded border border-slate-700">
-                                        <span class="block text-slate-500 uppercase text-[10px]">Painel Admin</span>
-                                        <span class="text-white select-all">seu-site/admin.html</span>
-                                    </div>
-                                    <div class="bg-slate-900 p-3 rounded border border-slate-700">
-                                        <span class="block text-slate-500 uppercase text-[10px]">Link Loja</span>
-                                        <span class="text-indigo-300 select-all">seu-site/?id=<span id="resSlug">...</span></span>
-                                    </div>
-                                    <div class="bg-slate-900 p-3 rounded border border-slate-700">
-                                        <span class="block text-slate-500 uppercase text-[10px]">Credenciais</span>
-                                        <span class="text-white select-all" id="resCreds">...</span>
-                                    </div>
-                                </div>
-                                <button onclick="resetForm()" class="w-full mt-4 bg-green-600 text-white py-3 rounded-lg font-bold text-xs hover:bg-green-500">Cadastrar Nova</button>
-                            </div>
+                <!-- VIEW: RESULTADO -->
+                <div id="view-result-view" class="hidden animate-fade-in max-w-md mx-auto">
+                    <div class="bg-green-500/10 border border-green-500/50 rounded-3xl p-8 text-center space-y-6">
+                        <div class="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto shadow-lg"><i data-lucide="check" class="text-white w-8 h-8"></i></div>
+                        <h3 class="text-xl font-bold text-white">Loja Ativada!</h3>
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-left text-xs space-y-1">
+                            <p><b>E-mail:</b> <span id="resEmail"></span></p>
+                            <p><b>Senha:</b> <span id="resPass"></span></p>
                         </div>
+                        <button id="btnWhatsAppNotify" class="w-full bg-[#25D366] text-white font-bold py-4 rounded-xl flex justify-center items-center gap-2">Notificar via WhatsApp</button>
+                        <button onclick="switchView('list')" class="w-full text-slate-400 text-sm py-2">Voltar à Lista</button>
                     </div>
                 </div>
 
@@ -199,235 +171,190 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, signInAnonymously, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, collection, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyAdwsGBTApwOwqr37qCv72gdPRbipsZG0Q", authDomain: "meuestoque-1badc.firebaseapp.com", projectId: "meuestoque-1badc", storageBucket: "meuestoque-1badc.appspot.com", messagingSenderId: "730003067834", appId: "1:730003067834:web:b205f1ea59053345960383" };
         
-        let app, auth, db;
-        let isCreatingStore = false;
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
 
-        try {
-            app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
-        } catch (e) {
-            showError("Erro fatal no Firebase: " + e.message);
-        }
+        let isDoingAuth = false;
 
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
-            // Tenta login anônimo para ler dados públicos, se não estiver logado
             onAuthStateChanged(auth, (user) => {
-                if (!user && !isCreatingStore) {
-                    signInAnonymously(auth).catch(handleAuthError);
+                if (!user && !isDoingAuth) {
+                    signInAnonymously(auth);
                 } else if (user) {
-                    initStoreList();
+                    setupListeners();
                 }
             });
         });
 
-        // --- ERROR HANDLING ---
-        function handleAuthError(error) {
-            console.error("Erro Auth:", error);
-            if(error.code === 'auth/operation-not-allowed') {
-                document.getElementById('setup-modal').classList.remove('hidden');
-            } else {
-                showError("Erro de autenticação: " + error.message);
-            }
-        }
-
-        function showError(msg) {
-            const el = document.getElementById('error-banner');
-            document.getElementById('error-msg').textContent = msg;
-            el.classList.remove('hidden');
-        }
-
-        window.forceRefresh = () => {
-            window.location.reload();
-        }
-
-        // --- NAVIGATION ---
-        window.toggleSidebar = () => {
-            document.getElementById('sidebar').classList.toggle('-translate-x-full');
-            document.getElementById('mobile-overlay').classList.toggle('hidden');
-        };
-
-        window.switchView = (view) => {
-            document.getElementById('view-list').classList.add('hidden');
-            document.getElementById('view-create').classList.add('hidden');
-            document.getElementById(`view-${view}`).classList.remove('hidden');
-            
-            const btnList = document.getElementById('nav-list');
-            const btnCreate = document.getElementById('nav-create');
-            
-            if(view === 'list') {
-                btnList.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all bg-indigo-600/10 text-indigo-400 border border-indigo-600/50";
-                btnCreate.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-all border border-transparent";
-            } else {
-                btnList.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-all border border-transparent";
-                btnCreate.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all bg-indigo-600/10 text-indigo-400 border border-indigo-600/50";
-            }
-            if(window.innerWidth < 768) window.toggleSidebar();
-        };
-
-        window.resetForm = () => {
-            document.getElementById('createStoreForm').reset();
-            document.getElementById('resultCard').classList.add('hidden');
-            document.getElementById('createStoreForm').classList.remove('opacity-50', 'pointer-events-none');
-        };
-
-        // --- LISTAR LOJAS ---
-        window.initStoreList = () => {
-            const tbody = document.getElementById('storesTableBody');
-            
+        function setupListeners() {
+            // Lojas Ativas
             onSnapshot(collection(db, "stores_registry"), (snapshot) => {
-                if (snapshot.empty) {
-                    tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-500 bg-slate-900 rounded-lg border border-slate-800 mt-2">Nenhuma loja cadastrada.</td></tr>`;
-                    return;
-                }
-
-                tbody.innerHTML = snapshot.docs.map(doc => {
-                    const s = doc.data();
-                    const isSuspended = s.status === 'suspended';
-                    const billing = s.billingDay ? `Dia ${s.billingDay}` : '--';
-                    
+                const tbody = document.getElementById('storesTableBody');
+                tbody.innerHTML = snapshot.docs.map(d => {
+                    const s = d.data();
+                    const sJson = JSON.stringify(s).replace(/'/g, "&#39;");
                     return `
-                        <tr class="hover:bg-slate-800/50 transition-colors border-b border-slate-800 last:border-0 group">
-                            <td class="p-5">
-                                <div class="font-bold text-white text-base">${s.storeName || 'Sem Nome'}</div>
-                                <div class="text-xs text-slate-500 font-mono mt-0.5">ID: ${s.slug}</div>
-                            </td>
-                            <td class="p-5">
-                                <span class="bg-indigo-500/10 text-indigo-400 px-2 py-1 rounded text-xs font-bold border border-indigo-500/20">${billing}</span>
-                            </td>
-                            <td class="p-5">
-                                <div class="text-slate-300 text-sm truncate max-w-[120px]" title="${s.ownerEmail}">${s.ownerEmail}</div>
-                            </td>
-                            <td class="p-5">
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${isSuspended ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-green-500/10 text-green-400 border-green-500/20'}">
-                                    <span class="w-1.5 h-1.5 rounded-full ${isSuspended ? 'bg-red-500' : 'bg-green-500'}"></span>
-                                    ${isSuspended ? 'SUSPENSO' : 'ATIVO'}
-                                </span>
-                            </td>
-                            <td class="p-5 text-right">
-                                <button onclick="toggleStoreStatus('${s.slug}', '${s.status}')" class="p-2.5 rounded-lg border border-slate-700 text-slate-400 hover:text-white hover:bg-slate-800 transition-all bg-slate-900 shadow-sm" title="${isSuspended ? 'Reativar' : 'Suspender'}">
-                                    <i data-lucide="${isSuspended ? 'play-circle' : 'pause-circle'}" class="w-4 h-4"></i>
-                                </button>
+                        <tr class="border-b border-slate-800 hover:bg-slate-900/50 transition-colors group">
+                            <td class="p-5 font-bold text-white">${s.storeName} <br><span class="text-[10px] text-slate-500 font-mono">${s.slug}</span></td>
+                            <td class="p-5 text-slate-400">Dia ${s.billingDay}</td>
+                            <td class="p-5 text-slate-400">${s.ownerEmail}</td>
+                            <td class="p-5"><span class="px-2 py-1 rounded text-[10px] font-bold ${s.status === 'active' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}">${s.status.toUpperCase()}</span></td>
+                            <td class="p-5 text-right flex gap-2 justify-end">
+                                <button onclick='openEditModal(${sJson})' class="p-2 text-indigo-400 hover:bg-indigo-900/30 rounded-lg"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                                <button onclick="toggleSuspend('${s.slug}', '${s.status}')" class="p-2 text-slate-500 hover:text-white"><i data-lucide="power" class="w-4 h-4"></i></button>
                             </td>
                         </tr>
                     `;
                 }).join('');
                 lucide.createIcons();
-            }, (error) => {
-                // Se der erro de permissão aqui, mostra o modal
-                if(error.code === 'permission-denied') {
-                    document.getElementById('setup-modal').classList.remove('hidden');
-                } else {
-                    showError("Erro ao carregar lista: " + error.message);
+            });
+
+            // Solicitações Pendentes
+            onSnapshot(collection(db, "registration_requests"), (snapshot) => {
+                const list = document.getElementById('requestsList');
+                const badge = document.getElementById('reqCountBadge');
+                const empty = document.getElementById('emptyRequests');
+                badge.textContent = snapshot.size;
+                badge.classList.toggle('hidden', snapshot.size === 0);
+                empty.classList.toggle('hidden', snapshot.size > 0);
+
+                list.innerHTML = snapshot.docs.map(d => {
+                    const r = d.data();
+                    const rJson = JSON.stringify({id: d.id, ...r}).replace(/'/g, "&#39;");
+                    return `
+                        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl group hover:border-indigo-500/50 transition-all">
+                            <div class="flex justify-between items-start mb-2"><span class="bg-amber-500/10 text-amber-500 border border-amber-500/30 px-2 py-0.5 rounded text-[10px] font-bold">SOLICITAÇÃO</span></div>
+                            <h4 class="text-white font-bold text-lg">${r.storeName}</h4>
+                            <p class="text-slate-400 text-xs mt-1"><b>Resp:</b> ${r.ownerName}</p>
+                            <p class="text-slate-400 text-xs"><b>E-mail:</b> ${r.email}</p>
+                            <p class="text-slate-400 text-xs"><b>Fone:</b> ${r.phone}</p>
+                            <div class="flex gap-2 mt-6">
+                                <button onclick='approveRequest(${rJson})' class="flex-1 bg-indigo-600 text-white text-xs font-bold py-2.5 rounded-lg">Aprovar Cadastro</button>
+                                <button onclick="deleteRequest('${d.id}')" class="p-2.5 border border-slate-700 text-slate-500 hover:text-red-400 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                lucide.createIcons();
+            });
+        }
+
+        window.switchView = (view) => {
+            ['list', 'requests', 'create', 'result-view'].forEach(v => {
+                const el = document.getElementById(`view-${v}`);
+                if(el) el.classList.add('hidden');
+            });
+            document.getElementById(`view-${view}`).classList.remove('hidden');
+
+            ['list', 'requests', 'create'].forEach(n => {
+                const btn = document.getElementById(`nav-${n}`);
+                if(btn) {
+                    if(n === view) {
+                        btn.classList.add('bg-indigo-600/10', 'text-indigo-400', 'border-indigo-600/50');
+                        btn.classList.remove('text-slate-400', 'border-transparent');
+                    } else {
+                        btn.classList.remove('bg-indigo-600/10', 'text-indigo-400', 'border-indigo-600/50');
+                        btn.classList.add('text-slate-400', 'border-transparent');
+                    }
                 }
             });
+            if(window.innerWidth < 768) toggleSidebar();
         };
 
-        // --- SUSPENDER LOJA ---
-        window.toggleStoreStatus = async (slug, currentStatus) => {
-            const newStatus = currentStatus === 'suspended' ? 'active' : 'suspended';
-            const action = newStatus === 'suspended' ? 'SUSPENDER' : 'REATIVAR';
-            
-            if(confirm(`Deseja ${action} a loja "${slug}"?`)) {
-                try {
-                    await updateDoc(doc(db, "stores_registry", slug), { status: newStatus });
-                    await updateDoc(doc(db, `stores/${slug}/config/store`), { subscriptionStatus: newStatus });
-                } catch(e) {
-                    showError("Erro ao alterar status: " + e.message);
-                }
+        window.toggleSidebar = () => {
+            document.getElementById('sidebar').classList.toggle('-translate-x-full');
+            document.getElementById('mobile-overlay').classList.toggle('hidden');
+        };
+
+        window.openEditModal = (data) => {
+            document.getElementById('editSlug').value = data.slug;
+            document.getElementById('editStoreName').value = data.storeName;
+            document.getElementById('editOwnerEmail').value = data.ownerEmail;
+            document.getElementById('editBillingDay').value = data.billingDay;
+            document.getElementById('edit-modal').classList.remove('hidden');
+        };
+
+        window.closeEditModal = () => document.getElementById('edit-modal').classList.add('hidden');
+
+        window.approveRequest = (data) => {
+            document.getElementById('requestId').value = data.id;
+            document.getElementById('storeName').value = data.storeName;
+            document.getElementById('adminEmail').value = data.email;
+            document.getElementById('storePhone').value = data.phone;
+            document.getElementById('storeSlug').value = data.storeName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, '-');
+            document.getElementById('adminPass').value = Math.random().toString(36).slice(-8);
+            document.getElementById('createTitle').textContent = "Confirmar Solicitação";
+            switchView('create');
+        };
+
+        window.deleteRequest = async (id) => {
+            if(confirm('Excluir solicitação?')) await deleteDoc(doc(db, "registration_requests", id));
+        };
+
+        window.toggleSuspend = async (slug, current) => {
+            const newStatus = current === 'active' ? 'suspended' : 'active';
+            if(confirm(`Deseja ${newStatus === 'active' ? 'Reativar' : 'Suspender'} a loja?`)) {
+                await updateDoc(doc(db, "stores_registry", slug), { status: newStatus });
+                await updateDoc(doc(db, "stores", slug, "config", "store"), { subscriptionStatus: newStatus });
             }
         };
 
-        // --- CRIAR LOJA ---
-        document.getElementById('storeName').addEventListener('input', (e) => {
-            if(!document.getElementById('storeSlug').dataset.touched) {
-                document.getElementById('storeSlug').value = e.target.value.toLowerCase()
-                    .normalize('NFD').replace(/[\u0300-\u036f]/g, "")
-                    .replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-            }
-        });
-        document.getElementById('storeSlug').addEventListener('input', (e) => e.target.dataset.touched = true);
+        window.saveStoreChanges = async (e) => {
+            e.preventDefault();
+            const slug = document.getElementById('editSlug').value;
+            const data = {
+                storeName: document.getElementById('editStoreName').value,
+                ownerEmail: document.getElementById('editOwnerEmail').value,
+                billingDay: document.getElementById('editBillingDay').value
+            };
+            await updateDoc(doc(db, "stores_registry", slug), data);
+            await updateDoc(doc(db, `stores/${slug}/config/store`), data);
+            closeEditModal();
+        };
+
+        window.triggerPasswordReset = async () => {
+            const email = document.getElementById('editOwnerEmail').value;
+            if(confirm(`Enviar link para ${email}?`)) await sendPasswordResetEmail(auth, email);
+        };
 
         document.getElementById('createStoreForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const btn = document.getElementById('btnSubmit');
-            const originalContent = btn.innerHTML;
-            
-            btn.innerHTML = `<i class="animate-spin w-5 h-5 mr-2" data-lucide="loader-2"></i> Criando...`;
-            btn.disabled = true;
-            document.getElementById('error-banner').classList.add('hidden');
-
+            isDoingAuth = true;
+            const rid = document.getElementById('requestId').value;
             const name = document.getElementById('storeName').value;
             const slug = document.getElementById('storeSlug').value;
             const email = document.getElementById('adminEmail').value;
             const pass = document.getElementById('adminPass').value;
-            const billingDay = parseInt(document.getElementById('billingDay').value);
+            const phone = document.getElementById('storePhone').value;
+            const day = document.getElementById('billingDay').value;
 
             try {
-                isCreatingStore = true; 
+                const cred = await createUserWithEmailAndPassword(auth, email, pass);
+                await setDoc(doc(db, "stores", slug, "config", "store"), { storeName: name, ownerEmail: email, ownerPhone: phone, billingDay: day, subscriptionStatus: 'active', isStoreOpen: true, primaryColor: '#6366f1' });
+                await setDoc(doc(db, "admin_directory", cred.user.uid), { storeId: slug, role: 'owner', email: email });
+                await setDoc(doc(db, "stores_registry", slug), { storeName: name, slug: slug, ownerEmail: email, status: 'active', billingDay: day });
+                if(rid) await deleteDoc(doc(db, "registration_requests", rid));
 
-                if(pass.length < 6) throw new Error("A senha deve ter no mínimo 6 caracteres.");
-
-                const userCred = await createUserWithEmailAndPassword(auth, email, pass);
-                const uid = userCred.user.uid;
-                const now = new Date().toISOString();
-
-                await setDoc(doc(db, "stores", slug, "config", "store"), {
-                    storeName: name, ownerEmail: email, isStoreOpen: true, createdAt: now,
-                    primaryColor: '#EA1D2C', subscriptionStatus: 'active',
-                    billingDay: billingDay, whatsappNumber: '', footerText: `Bem-vindo à ${name}`
-                });
-
-                await setDoc(doc(db, "admin_directory", uid), {
-                    storeId: slug, role: "owner", email: email
-                });
-
-                await setDoc(doc(db, "stores_registry", slug), {
-                    storeName: name, slug: slug, ownerEmail: email, 
-                    createdAt: now, status: 'active', billingDay: billingDay
-                });
-
+                document.getElementById('resEmail').textContent = email;
+                document.getElementById('resPass').textContent = pass;
+                document.getElementById('btnWhatsAppNotify').onclick = () => {
+                    const msg = `Sua loja ${name} está ativa! \nLogin: ${email} \nSenha: ${pass}`;
+                    window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank');
+                };
                 await signOut(auth);
-                isCreatingStore = false; 
+                isDoingAuth = false;
                 await signInAnonymously(auth);
-
-                document.getElementById('resSlug').textContent = slug;
-                document.getElementById('resCreds').textContent = `${email} | ${pass}`;
-                document.getElementById('resultCard').classList.remove('hidden');
-                document.getElementById('createStoreForm').classList.add('opacity-50', 'pointer-events-none');
-
-            } catch (error) {
-                isCreatingStore = false;
-                console.error(error);
-                let msg = error.message;
-                
-                // Tratamento de erros específicos
-                if(error.code === 'auth/email-already-in-use') msg = "Este e-mail já está em uso.";
-                if(error.code === 'auth/operation-not-allowed') {
-                    document.getElementById('setup-modal').classList.remove('hidden');
-                    msg = "Operação não permitida (Ver Configurações)";
-                }
-                if(error.code === 'permission-denied') {
-                    document.getElementById('setup-modal').classList.remove('hidden');
-                    msg = "Permissão negada (Ver Regras do Banco)";
-                }
-                
-                showError(msg);
-                document.getElementById('createStoreForm').classList.remove('opacity-50', 'pointer-events-none');
-            } finally {
-                btn.innerHTML = originalContent;
-                btn.disabled = false;
-                lucide.createIcons();
-            }
+                switchView('result-view');
+            } catch(err) { alert(err.message); isDoingAuth = false; }
         });
     </script>
 </body>
 </html>
-
 
