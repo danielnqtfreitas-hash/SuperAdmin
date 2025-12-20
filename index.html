@@ -24,7 +24,6 @@
             transition: all 0.2s;
         }
         .input-dark:focus { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); }
-        .input-dark:disabled { opacity: 0.5; cursor: not-allowed; }
         .select-dark {
             width: 100%;
             background-color: #1e293b;
@@ -39,20 +38,13 @@
             background-repeat: no-repeat;
             background-size: 1.5em 1.5em;
         }
-        .toggle-checkbox:checked {
-            right: 0;
-            border-color: #68D391;
-        }
-        .toggle-checkbox:checked + .toggle-label {
-            background-color: #68D391;
-        }
         .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 h-screen flex overflow-hidden w-full">
 
-    <!-- PLAN MODAL (Criar/Editar Planos) -->
+    <!-- MODAL DE PLANOS -->
     <div id="plan-modal" class="fixed inset-0 z-[110] bg-black/80 hidden flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-lg w-full p-8 shadow-2xl relative animate-fade-in flex flex-col max-h-[90vh] overflow-y-auto">
             <button onclick="closePlanModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
@@ -76,22 +68,14 @@
                         <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Max. Banners</label>
                         <input type="number" id="planMaxBanners" required class="input-dark" value="3">
                     </div>
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Tem Carrossel?</label>
-                        <select id="planHasCarousel" class="select-dark">
-                            <option value="true">Sim</option>
-                            <option value="false">Não</option>
-                        </select>
-                    </div>
-                    <div class="col-span-2">
-                        <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Benefícios (um por linha)</label>
-                        <textarea id="planFeatures" class="input-dark" rows="4" placeholder="Ex: Até 50 produtos
-1 banner de destaque
-Suporte por WhatsApp
-Vitrine personalizável"></textarea>
+                    <div class="flex items-end pb-3">
+                        <label class="flex items-center cursor-pointer relative">
+                            <input type="checkbox" id="planHasCarousel" class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                            <span class="ml-3 text-sm font-medium text-slate-300">Carrossel Ativo</span>
+                        </label>
                     </div>
                 </div>
-                
                 <div class="pt-4 flex gap-3">
                     <button type="button" onclick="closePlanModal()" class="flex-1 py-3 bg-slate-800 text-slate-300 font-bold rounded-xl">Cancelar</button>
                     <button type="submit" class="flex-1 py-3 bg-pink-600 hover:bg-pink-500 text-white font-bold rounded-xl shadow-lg">Salvar Plano</button>
@@ -99,46 +83,6 @@ Vitrine personalizável"></textarea>
             </form>
         </div>
     </div>
-
-    <!-- EDIT STORE MODAL (Para Lojas Ativas) -->
-    <div id="edit-modal" class="fixed inset-0 z-[100] bg-black/80 hidden flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-lg w-full p-8 shadow-2xl relative animate-fade-in flex flex-col max-h-[90vh] overflow-y-auto">
-            <button onclick="closeEditModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
-            <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-2"><i data-lucide="edit-3" class="w-6 h-6 text-indigo-500"></i> Editar Loja</h2>
-            <form id="editStoreForm" onsubmit="saveStoreChanges(event)" class="space-y-4">
-                <input type="hidden" id="editSlug">
-                <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Nome da Loja</label>
-                    <input type="text" id="editStoreName" required class="input-dark">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Plano Contratado</label>
-                    <select id="editStorePlan" class="select-dark">
-                        <!-- Populated by JS -->
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 mb-2">E-mail do Responsável</label>
-                    <input type="email" id="editOwnerEmail" required class="input-dark">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Dia do Vencimento</label>
-                    <input type="number" id="editBillingDay" min="1" max="31" required class="input-dark">
-                </div>
-                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 mt-4">
-                    <h3 class="text-sm font-bold text-white mb-2 flex items-center gap-2"><i data-lucide="key" class="w-4 h-4 text-yellow-500"></i> Segurança</h3>
-                    <button type="button" onclick="triggerPasswordReset()" id="btnResetPass" class="w-full bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold py-2.5 rounded-lg border border-slate-700 transition-colors">Enviar Link de Redefinição de Senha</button>
-                </div>
-                <div class="pt-4 flex gap-3">
-                    <button type="button" onclick="closeEditModal()" class="flex-1 py-3 bg-slate-800 text-slate-300 font-bold rounded-xl">Cancelar</button>
-                    <button type="submit" class="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-lg">Salvar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- MOBILE OVERLAY -->
-    <div id="mobile-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/80 z-40 hidden md:hidden backdrop-blur-sm"></div>
 
     <!-- SIDEBAR -->
     <aside id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-slate-900 border-r border-slate-800 z-50 transform -translate-x-full md:translate-x-0 md:relative sidebar-transition flex flex-col">
@@ -149,7 +93,6 @@ Vitrine personalizável"></textarea>
             </div>
             <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
         </div>
-
         <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
             <button onclick="switchView('list')" id="nav-list" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all bg-indigo-600/10 text-indigo-400 border border-indigo-600/50">
                 <i data-lucide="list" class="w-5 h-5"></i> Lojas Ativas
@@ -165,16 +108,9 @@ Vitrine personalizável"></textarea>
                 <i data-lucide="plus-circle" class="w-5 h-5"></i> Cadastro Manual
             </button>
         </nav>
-
-        <div class="p-4 border-t border-slate-800">
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-full bg-indigo-900/50 text-indigo-400 flex items-center justify-center text-xs font-bold">SA</div>
-                <div><p class="text-xs font-bold text-white">Administrador</p><p class="text-[10px] text-slate-400">Online</p></div>
-            </div>
-        </div>
     </aside>
 
-    <!-- MAIN CONTENT -->
+    <!-- CONTEÚDO PRINCIPAL -->
     <main class="flex-1 flex flex-col h-screen overflow-hidden relative bg-slate-950 w-full">
         <header class="h-16 flex items-center px-4 border-b border-slate-800 md:hidden bg-slate-900">
             <button onclick="toggleSidebar()" class="p-2 text-slate-300 rounded-lg"><i data-lucide="menu" class="w-6 h-6"></i></button>
@@ -184,108 +120,82 @@ Vitrine personalizável"></textarea>
         <div class="flex-1 overflow-y-auto p-4 md:p-8 w-full relative">
             <div class="max-w-6xl mx-auto pb-20">
                 
-                <!-- VIEW: LISTA (COM BUSCA) -->
+                <!-- VIEW: LISTA -->
                 <div id="view-list" class="animate-fade-in">
-                    <div class="flex flex-col sm:flex-row justify-between items-end sm:items-center mb-6 gap-4">
+                    <div class="flex justify-between items-center mb-6">
                         <h2 class="text-2xl font-bold text-white">Lojas Ativas</h2>
-                        <div class="relative w-full sm:w-72">
+                        <div class="relative w-64">
                             <i data-lucide="search" class="absolute left-3 top-3 w-5 h-5 text-slate-500"></i>
-                            <input type="text" id="searchInput" placeholder="Buscar por nome, email ou ID..." class="input-dark pl-10 py-2.5">
+                            <input type="text" id="searchInput" placeholder="Buscar loja..." class="input-dark pl-10 py-2.5">
                         </div>
                     </div>
-
                     <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-x-auto">
-                        <table class="w-full text-left">
+                        <table class="w-full text-left text-sm">
                             <thead class="bg-slate-800 text-slate-400 text-xs uppercase font-semibold">
                                 <tr>
                                     <th class="p-5">Loja / Plano</th>
-                                    <th class="p-5">Limites</th>
                                     <th class="p-5">E-mail</th>
                                     <th class="p-5">Status</th>
                                     <th class="p-5 text-right">Ações</th>
                                 </tr>
                             </thead>
-                            <tbody id="storesTableBody" class="divide-y divide-slate-800 text-sm">
-                                <tr><td colspan="5" class="p-10 text-center text-slate-500">Carregando lojas...</td></tr>
+                            <tbody id="storesTableBody" class="divide-y divide-slate-800">
+                                <!-- Lojas carregadas por JS -->
                             </tbody>
                         </table>
                     </div>
-                    <div id="noResults" class="hidden text-center py-10 text-slate-500 italic">Nenhuma loja encontrada para esta busca.</div>
                 </div>
 
-                <!-- VIEW: PLANS (GERENCIAR PLANOS) -->
-                <div id="view-plans" class="hidden animate-fade-in">
-                    <div class="flex justify-between items-center mb-8">
-                        <div>
-                            <h2 class="text-2xl font-bold text-white">Planos de Assinatura</h2>
-                            <p class="text-sm text-slate-400 mt-1">Gerencie os planos disponíveis para pré-cadastro</p>
-                        </div>
-                        <div class="flex gap-2">
-                            <button onclick="publishPlansForRegistration()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-xl shadow-lg flex items-center gap-2 text-sm">
-                                <i data-lucide="upload" class="w-4 h-4"></i> Publicar para Pré-cadastro
-                            </button>
-                            <button onclick="openPlanModal()" class="bg-pink-600 hover:bg-pink-500 text-white font-bold py-2 px-4 rounded-xl shadow-lg flex items-center gap-2 text-sm">
-                                <i data-lucide="plus" class="w-4 h-4"></i> Novo Plano
-                            </button>
-                        </div>
-                    </div>
-                    <div id="plansGrid" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <!-- Plans rendered here -->
-                    </div>
-                    <div id="emptyPlans" class="hidden text-center py-20 bg-slate-900 rounded-3xl border border-slate-800">
-                        <div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4"><i data-lucide="package-open" class="text-slate-500 w-8 h-8"></i></div>
-                        <p class="text-slate-400">Nenhum plano cadastrado.</p>
-                        <p class="text-slate-500 text-xs mt-1">Crie planos para ativar lojas.</p>
-                    </div>
-                </div>
-
-                <!-- VIEW: SOLICITAÇÕES -->
+                <!-- VIEW: SOLICITAÇÕES (EDITADA) -->
                 <div id="view-requests" class="hidden animate-fade-in">
                     <h2 class="text-2xl font-bold text-white mb-8">Solicitações de Cadastro</h2>
                     <div id="requestsList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-                    <div id="emptyRequests" class="hidden text-center py-20 text-slate-500">Sem solicitações pendentes.</div>
+                    <div id="emptyRequests" class="hidden text-center py-20 text-slate-500 italic">Sem solicitações pendentes.</div>
                 </div>
 
-                <!-- VIEW: CRIAR -->
+                <!-- VIEW: CRIAR/ATIVAR LOJA -->
                 <div id="view-create" class="hidden animate-fade-in">
-                    <h2 class="text-2xl font-bold text-white mb-8" id="createTitle">Cadastrar Nova Loja</h2>
+                    <h2 class="text-2xl font-bold text-white mb-8" id="createTitle">Ativar Nova Loja</h2>
                     <form id="createStoreForm" class="bg-slate-900 p-8 rounded-3xl border border-slate-800 space-y-6">
                         <input type="hidden" id="requestId">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div><label class="block text-xs font-bold uppercase text-slate-500 mb-2">Nome da Loja</label><input type="text" id="storeName" required class="input-dark"></div>
-                            <div><label class="block text-xs font-bold uppercase text-slate-500 mb-2">Slug (ID da URL)</label><input type="text" id="storeSlug" required class="input-dark font-mono text-indigo-300"></div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-500 mb-2">Slug (URL)</label><input type="text" id="storeSlug" required class="input-dark font-mono text-indigo-300"></div>
                             
-                            <!-- SELETOR DE PLANO DINAMICO -->
                             <div class="md:col-span-2">
-                                <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Selecione o Plano</label>
-                                <select id="storePlan" required class="select-dark text-white">
+                                <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Plano de Assinatura</label>
+                                <select id="storePlan" required class="select-dark">
                                     <option value="">Carregando planos...</option>
                                 </select>
-                                <p class="text-[10px] text-slate-500 mt-1">Os limites e valores serão aplicados automaticamente baseados no plano escolhido.</p>
                             </div>
 
                             <div><label class="block text-xs font-bold uppercase text-slate-500 mb-2">Email do Lojista</label><input type="email" id="adminEmail" required class="input-dark"></div>
-                            <div><label class="block text-xs font-bold uppercase text-slate-500 mb-2">WhatsApp</label><input type="text" id="storePhone" required class="input-dark" placeholder="5511999999999"></div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-500 mb-2">WhatsApp</label><input type="text" id="storePhone" required class="input-dark"></div>
                             <div><label class="block text-xs font-bold uppercase text-slate-500 mb-2">Senha Provisória</label><input type="text" id="adminPass" required class="input-dark"></div>
-                            <div><label class="block text-xs font-bold uppercase text-slate-500 mb-2">Dia do Vencimento</label><input type="number" id="billingDay" min="1" max="31" value="10" required class="input-dark"></div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-500 mb-2">Dia Vencimento</label><input type="number" id="billingDay" min="1" max="31" value="10" required class="input-dark"></div>
                         </div>
-                        <button type="submit" id="btnSubmit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-xl shadow-lg flex justify-center items-center gap-2">Confirmar e Ativar Loja</button>
+                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-xl shadow-lg">Confirmar Ativação</button>
                     </form>
                 </div>
 
-                <!-- VIEW: RESULTADO -->
-                <div id="view-result-view" class="hidden animate-fade-in max-w-md mx-auto">
-                    <div class="bg-green-500/10 border border-green-500/50 rounded-3xl p-8 text-center space-y-6">
-                        <div class="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto shadow-lg"><i data-lucide="check" class="text-white w-8 h-8"></i></div>
-                        <h3 class="text-xl font-bold text-white">Loja Ativada!</h3>
-                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-left text-xs space-y-1">
-                            <p><b>E-mail:</b> <span id="resEmail"></span></p>
-                            <p><b>Senha:</b> <span id="resPass"></span></p>
-                            <p><b>Plano:</b> <span id="resPlan" class="uppercase font-bold text-indigo-400"></span></p>
-                        </div>
-                        <button id="btnWhatsAppNotify" class="w-full bg-[#25D366] text-white font-bold py-4 rounded-xl flex justify-center items-center gap-2">Notificar via WhatsApp</button>
-                        <button onclick="switchView('list')" class="w-full text-slate-400 text-sm py-2">Voltar à Lista</button>
+                <!-- VIEW: PLANOS -->
+                <div id="view-plans" class="hidden animate-fade-in">
+                    <div class="flex justify-between items-center mb-8">
+                        <h2 class="text-2xl font-bold text-white">Gerenciar Planos</h2>
+                        <button onclick="openPlanModal()" class="bg-pink-600 px-4 py-2 rounded-xl text-sm font-bold shadow-lg">Novo Plano</button>
                     </div>
+                    <div id="plansGrid" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+                </div>
+
+                <!-- VIEW RESULTADO -->
+                <div id="view-result-view" class="hidden animate-fade-in max-w-md mx-auto text-center space-y-6">
+                    <div class="bg-green-500/10 border border-green-500/50 rounded-3xl p-8">
+                        <i data-lucide="check-circle" class="w-16 h-16 text-green-500 mx-auto mb-4"></i>
+                        <h3 class="text-xl font-bold text-white">Loja Ativada com Sucesso!</h3>
+                        <p class="text-sm text-slate-400 mt-2">O acesso foi criado. Notifique o lojista pelo WhatsApp.</p>
+                        <button id="btnWhatsAppNotify" class="w-full mt-6 bg-[#25D366] text-white font-bold py-4 rounded-xl">Enviar Dados por WhatsApp</button>
+                    </div>
+                    <button onclick="switchView('list')" class="text-slate-500 text-sm">Voltar para a Lista</button>
                 </div>
 
             </div>
@@ -294,257 +204,190 @@ Vitrine personalizável"></textarea>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, onSnapshot, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyAdwsGBTApwOwqr37qCv72gdPRbipsZG0Q", authDomain: "meuestoque-1badc.firebaseapp.com", projectId: "meuestoque-1badc", storageBucket: "meuestoque-1badc.appspot.com", messagingSenderId: "730003067834", appId: "1:730003067834:web:b205f1ea59053345960383" };
-        
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        let isDoingAuth = false;
         let availablePlans = [];
-        let allStores = []; // Cache para busca
+        let isDoingAuth = false;
 
-        document.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
-            onAuthStateChanged(auth, (user) => {
-                if (!user && !isDoingAuth) {
-                    signInAnonymously(auth);
-                } else if (user) {
-                    setupListeners();
-                }
-            });
-
-            // Listener do Input de Busca
-            const searchInput = document.getElementById('searchInput');
-            searchInput.addEventListener('input', (e) => {
-                const term = e.target.value.toLowerCase();
-                const filtered = allStores.filter(s => 
-                    s.storeName.toLowerCase().includes(term) || 
-                    s.ownerEmail.toLowerCase().includes(term) || 
-                    s.slug.toLowerCase().includes(term)
-                );
-                renderStoreTable(filtered);
-            });
+        onAuthStateChanged(auth, (user) => {
+            if (!user && !isDoingAuth) signInAnonymously(auth);
+            else if (user) setupListeners();
         });
 
-        // Helper para formatar moeda
-        const formatBRL = (val) => Number(val).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
-
-        // Função separada de renderização para permitir filtragem
-        function renderStoreTable(storesList) {
-            const tbody = document.getElementById('storesTableBody');
-            const noResults = document.getElementById('noResults');
-            
-            if (storesList.length === 0) {
-                tbody.innerHTML = '';
-                noResults.classList.remove('hidden');
-                return;
-            }
-            noResults.classList.add('hidden');
-
-            tbody.innerHTML = storesList.map(s => {
-                const sJson = JSON.stringify(s).replace(/'/g, "&#39;");
-                const planName = availablePlans.find(p => p.id === s.planId)?.name || s.planId || 'N/A';
-                
-                return `
-                    <tr class="border-b border-slate-800 hover:bg-slate-900/50 transition-colors group">
-                        <td class="p-5 font-bold text-white">
-                            ${s.storeName}
-                            <div class="flex gap-2 items-center mt-1">
-                                <span class="text-[10px] text-slate-500 font-mono">${s.slug}</span>
-                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 uppercase">${planName}</span>
-                            </div>
-                        </td>
-                        <td class="p-5 text-slate-400 text-xs">
-                            <div>Max Prod: ${s.maxProducts || '-'}</div>
-                            <div>Carrossel: ${s.hasCarousel ? 'Sim' : 'Não'}</div>
-                        </td>
-                        <td class="p-5 text-slate-400 text-xs">${s.ownerEmail}</td>
-                        <td class="p-5"><span class="px-2 py-1 rounded text-[10px] font-bold ${s.status === 'active' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}">${s.status.toUpperCase()}</span></td>
-                        <td class="p-5 text-right flex gap-2 justify-end">
-                            <button onclick='openEditModal(${sJson})' class="p-2 text-indigo-400 hover:bg-indigo-900/30 rounded-lg" title="Editar"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
-                            <button onclick="toggleSuspend('${s.slug}', '${s.status}')" class="p-2 text-slate-500 hover:text-white" title="${s.status === 'active' ? 'Suspender' : 'Ativar'}"><i data-lucide="power" class="w-4 h-4"></i></button>
-                            <button onclick="deleteStore('${s.slug}')" class="p-2 text-slate-600 hover:text-red-500 hover:bg-red-500/10 rounded-lg" title="Excluir Definitivamente"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-            lucide.createIcons();
-        }
-
         function setupListeners() {
-            // LISTENER: Planos de Assinatura
+            // Monitorar Planos
             onSnapshot(collection(db, "config_plans"), (snapshot) => {
-                availablePlans = [];
+                availablePlans = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
                 const grid = document.getElementById('plansGrid');
-                const empty = document.getElementById('emptyPlans');
-                
                 const storeSelect = document.getElementById('storePlan');
-                const editSelect = document.getElementById('editStorePlan');
-                storeSelect.innerHTML = '<option value="">Selecione um Plano...</option>';
-                editSelect.innerHTML = '';
-
-                if(snapshot.empty) {
-                    empty.classList.remove('hidden');
-                    grid.innerHTML = '';
-                    storeSelect.innerHTML = '<option value="">Nenhum plano cadastrado</option>';
-                    return;
-                }
-
-                empty.classList.add('hidden');
-                grid.innerHTML = snapshot.docs.map(d => {
-                    const p = d.data();
-                    const pJson = JSON.stringify({id: d.id, ...p}).replace(/'/g, "&#39;");
-                    availablePlans.push({id: d.id, ...p});
-
-                    const opt = `<option value="${d.id}">${p.name} - ${formatBRL(p.price)}</option>`;
-                    storeSelect.insertAdjacentHTML('beforeend', opt);
-                    editSelect.insertAdjacentHTML('beforeend', opt);
-
+                
+                storeSelect.innerHTML = '<option value="">Selecione o Plano...</option>';
+                grid.innerHTML = availablePlans.map(p => {
+                    storeSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
                     return `
-                        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl flex flex-col justify-between hover:border-pink-500/30 transition-all group">
-                            <div>
-                                <div class="flex justify-between items-start mb-4">
-                                    <h3 class="font-bold text-xl text-white">${p.name}</h3>
-                                    <span class="text-pink-400 font-bold bg-pink-500/10 px-2 py-1 rounded text-xs">${formatBRL(p.price)}</span>
-                                </div>
-                                <ul class="space-y-2 text-sm text-slate-400 mb-6">
-                                    <li class="flex items-center gap-2"><i data-lucide="box" class="w-4 h-4 text-slate-500"></i> ${p.maxProducts} Produtos</li>
-                                    <li class="flex items-center gap-2"><i data-lucide="image" class="w-4 h-4 text-slate-500"></i> ${p.maxBanners} Banners de Destaque</li>
-                                    <li class="flex items-center gap-2">
-                                        <i data-lucide="${p.hasCarousel ? 'check-circle' : 'x-circle'}" class="w-4 h-4 ${p.hasCarousel ? 'text-green-500' : 'text-slate-600'}"></i> 
-                                        ${p.hasCarousel ? 'Carrossel Ativo' : 'Sem Carrossel'}
-                                    </li>
-                                    ${p.features ? p.features.split('\n').map(f => `<li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-green-500"></i> ${f.trim()}</li>`).join('') : ''}
-                                </ul>
-                            </div>
-                            <div class="flex gap-2 pt-4 border-t border-slate-800">
-                                <button onclick='openPlanModal(${pJson})' class="flex-1 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold py-2 rounded-lg transition-colors">Editar</button>
-                                <button onclick="deletePlan('${d.id}')" class="p-2 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl group">
+                            <h3 class="font-bold text-white text-lg">${p.name}</h3>
+                            <p class="text-pink-500 font-bold mb-4">R$ ${p.price}</p>
+                            <ul class="text-xs text-slate-500 space-y-1 mb-6">
+                                <li>- Máx ${p.maxProducts} Produtos</li>
+                                <li>- ${p.hasCarousel ? 'Com Carrossel' : 'Sem Carrossel'}</li>
+                            </ul>
+                            <div class="flex gap-2">
+                                <button onclick='openPlanModal(${JSON.stringify(p)})' class="flex-1 bg-slate-800 text-xs py-2 rounded-lg font-bold">Editar</button>
+                                <button onclick="deletePlan('${p.id}')" class="p-2 text-slate-500 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                             </div>
                         </div>
                     `;
                 }).join('');
-                
-                // Se já carregou as lojas, re-renderiza para atualizar nomes dos planos na tabela
-                if(allStores.length > 0) renderStoreTable(allStores);
                 lucide.createIcons();
             });
 
-            // LISTENER: Lojas Ativas
-            onSnapshot(collection(db, "stores_registry"), (snapshot) => {
-                allStores = snapshot.docs.map(d => d.data());
-                
-                // Aplica filtro atual se houver texto na busca
-                const term = document.getElementById('searchInput').value.toLowerCase();
-                const filtered = term ? allStores.filter(s => 
-                    s.storeName.toLowerCase().includes(term) || 
-                    s.ownerEmail.toLowerCase().includes(term) || 
-                    s.slug.toLowerCase().includes(term)
-                ) : allStores;
-
-                renderStoreTable(filtered);
-            });
-
-            // LISTENER: Solicitações
+            // Monitorar Solicitações (EDITADA PARA MOSTRAR PLANO)
             onSnapshot(collection(db, "registration_requests"), (snapshot) => {
                 const list = document.getElementById('requestsList');
                 const badge = document.getElementById('reqCountBadge');
-                const empty = document.getElementById('emptyRequests');
                 badge.textContent = snapshot.size;
                 badge.classList.toggle('hidden', snapshot.size === 0);
-                empty.classList.toggle('hidden', snapshot.size > 0);
-
+                
+                if(snapshot.empty) {
+                    document.getElementById('emptyRequests').classList.remove('hidden');
+                    list.innerHTML = '';
+                    return;
+                }
+                
+                document.getElementById('emptyRequests').classList.add('hidden');
                 list.innerHTML = snapshot.docs.map(d => {
                     const r = d.data();
-                    const rJson = JSON.stringify({id: d.id, ...r}).replace(/'/g, "&#39;");
-                    
-                    // Info do plano
-                    const planInfo = r.planId ? `
-                        <div class="mt-3 p-3 bg-slate-800 rounded-xl border border-slate-700">
-                            <div class="flex justify-between items-center mb-1">
-                                <span class="text-xs font-bold text-slate-400">PLANO SELECIONADO:</span>
-                                <span class="text-xs font-bold text-green-400">${r.planName || r.planId}</span>
-                            </div>
-                            <div class="text-xs text-slate-500">
-                                <div>${r.planPrice ? `R$ ${r.planPrice.toFixed(2)}/mês` : 'Preço não informado'}</div>
-                                <div class="flex gap-3 mt-1">
-                                    <span>Produtos: ${r.planFeatures?.maxProducts || 'N/A'}</span>
-                                    <span>Banners: ${r.planFeatures?.maxBanners || 'N/A'}</span>
-                                    <span>Carrossel: ${r.planFeatures?.hasCarousel ? 'Sim' : 'Não'}</span>
-                                </div>
-                            </div>
-                        </div>
-                    ` : '';
+                    const planName = availablePlans.find(p => p.id === r.planId)?.name || "Não Selecionado";
                     
                     return `
-                        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl group hover:border-indigo-500/50 transition-all">
-                            <div class="flex justify-between items-start mb-2">
-                                <span class="bg-amber-500/10 text-amber-500 border border-amber-500/30 px-2 py-0.5 rounded text-[10px] font-bold">SOLICITAÇÃO</span>
-                                ${r.planName ? `<span class="text-[10px] font-bold bg-green-500/10 text-green-400 px-2 py-0.5 rounded border border-green-500/30">${r.planName}</span>` : ''}
+                        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                            <div class="flex justify-between items-start">
+                                <h4 class="text-white font-bold text-lg">${r.storeName}</h4>
+                                <span class="bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 px-2 py-0.5 rounded text-[10px] font-bold uppercase">
+                                    Plano: ${planName}
+                                </span>
                             </div>
-                            <h4 class="text-white font-bold text-lg">${r.storeName}</h4>
-                            <p class="text-slate-400 text-xs mt-1"><b>Resp:</b> ${r.ownerName}</p>
+                            <p class="text-slate-400 text-xs mt-2"><b>Resp:</b> ${r.ownerName}</p>
                             <p class="text-slate-400 text-xs"><b>E-mail:</b> ${r.email}</p>
-                            ${planInfo}
                             <div class="flex gap-2 mt-6">
-                                <button onclick='approveRequest(${rJson})' class="flex-1 bg-indigo-600 text-white text-xs font-bold py-2.5 rounded-lg">Aprovar Cadastro</button>
-                                <button onclick="deleteRequest('${d.id}')" class="p-2.5 border border-slate-700 text-slate-500 hover:text-red-400 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                <button onclick='approveRequest(${JSON.stringify({id: d.id, ...r})})' class="flex-1 bg-indigo-600 py-2.5 rounded-lg text-xs font-bold">Aprovar e Configurar</button>
+                                <button onclick="deleteRequest('${d.id}')" class="p-2.5 border border-slate-700 text-slate-500 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                             </div>
                         </div>
                     `;
                 }).join('');
                 lucide.createIcons();
             });
+
+            // Monitorar Lojas Ativas
+            onSnapshot(collection(db, "stores_registry"), (snapshot) => {
+                const tbody = document.getElementById('storesTableBody');
+                tbody.innerHTML = snapshot.docs.map(d => {
+                    const s = d.data();
+                    return `
+                        <tr class="hover:bg-slate-900/50">
+                            <td class="p-5 font-bold text-white">${s.storeName}<br><span class="text-[10px] text-slate-500">${s.slug}</span></td>
+                            <td class="p-5 text-slate-400 text-xs">${s.ownerEmail}</td>
+                            <td class="p-5"><span class="px-2 py-1 rounded text-[10px] font-bold ${s.status === 'active' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}">${s.status.toUpperCase()}</span></td>
+                            <td class="p-5 text-right">
+                                <button onclick="deleteStore('${s.slug}')" class="text-slate-500 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+                lucide.createIcons();
+            });
         }
 
-        // --- NAVIGATION ---
+        // --- FUNÇÕES DE AÇÃO ---
         window.switchView = (view) => {
-            ['list', 'requests', 'create', 'result-view', 'plans'].forEach(v => {
-                const el = document.getElementById(`view-${v}`);
-                if(el) el.classList.add('hidden');
-            });
+            ['list', 'requests', 'create', 'plans', 'result-view'].forEach(v => document.getElementById(`view-${v}`)?.classList.add('hidden'));
             document.getElementById(`view-${view}`).classList.remove('hidden');
-
-            ['list', 'requests', 'create', 'plans'].forEach(n => {
-                const btn = document.getElementById(`nav-${n}`);
-                if(btn) {
-                    if(n === view) {
-                        btn.classList.add('bg-indigo-600/10', 'text-indigo-400', 'border-indigo-600/50');
-                        btn.classList.remove('text-slate-400', 'border-transparent');
-                    } else {
-                        btn.classList.remove('bg-indigo-600/10', 'text-indigo-400', 'border-indigo-600/50');
-                        btn.classList.add('text-slate-400', 'border-transparent');
-                    }
-                }
-            });
-            if(window.innerWidth < 768) toggleSidebar();
         };
 
-        window.toggleSidebar = () => {
-            document.getElementById('sidebar').classList.toggle('-translate-x-full');
-            document.getElementById('mobile-overlay').classList.toggle('hidden');
+        window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('-translate-x-full');
+
+        // Aprovar Solicitação: Puxa o planId e seleciona no form
+        window.approveRequest = (data) => {
+            document.getElementById('requestId').value = data.id;
+            document.getElementById('storeName').value = data.storeName;
+            document.getElementById('adminEmail').value = data.email;
+            document.getElementById('storePhone').value = data.phone;
+            document.getElementById('storePlan').value = data.planId || ""; // Seleciona o plano escolhido pelo lojista
+            document.getElementById('storeSlug').value = data.storeName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, '-');
+            document.getElementById('adminPass').value = Math.random().toString(36).slice(-8);
+            switchView('create');
         };
 
-        // --- PLAN MANAGEMENT ---
+        window.deleteRequest = async (id) => { if(confirm("Excluir?")) await deleteDoc(doc(db, "registration_requests", id)); };
+
+        // Cadastro Final
+        document.getElementById('createStoreForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const planId = document.getElementById('storePlan').value;
+            const plan = availablePlans.find(p => p.id === planId);
+            if(!plan) return alert("Selecione um plano.");
+
+            isDoingAuth = true;
+            const slug = document.getElementById('storeSlug').value;
+            const email = document.getElementById('adminEmail').value;
+            const pass = document.getElementById('adminPass').value;
+            const phone = document.getElementById('storePhone').value;
+            const name = document.getElementById('storeName').value;
+
+            try {
+                const cred = await createUserWithEmailAndPassword(auth, email, pass);
+                const storeData = {
+                    storeName: name,
+                    ownerEmail: email,
+                    ownerPhone: phone,
+                    status: 'active',
+                    planId: planId,
+                    maxProducts: plan.maxProducts,
+                    hasCarousel: plan.hasCarousel,
+                    subscriptionStatus: 'active',
+                    isStoreOpen: true
+                };
+
+                await setDoc(doc(db, "stores", slug, "config", "store"), storeData);
+                await setDoc(doc(db, "admin_directory", cred.user.uid), { storeId: slug, role: 'owner', email: email });
+                await setDoc(doc(db, "stores_registry", slug), { ...storeData, slug });
+                
+                const rid = document.getElementById('requestId').value;
+                if(rid) await deleteDoc(doc(db, "registration_requests", rid));
+
+                document.getElementById('btnWhatsAppNotify').onclick = () => {
+                    const msg = `Sua loja ${name} está ativa! \nPlano: ${plan.name} \nLogin: ${email} \nSenha: ${pass}`;
+                    window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank');
+                };
+
+                await signOut(auth);
+                isDoingAuth = false;
+                await signInAnonymously(auth);
+                switchView('result-view');
+            } catch(err) { alert(err.message); isDoingAuth = false; }
+        });
+
+        // Gestão de Planos
         window.openPlanModal = (data = null) => {
+            const form = document.getElementById('planForm');
             if(data) {
-                document.getElementById('planModalTitle').innerText = "Editar Plano";
                 document.getElementById('planId').value = data.id;
                 document.getElementById('planName').value = data.name;
                 document.getElementById('planPrice').value = data.price;
                 document.getElementById('planMaxProducts').value = data.maxProducts;
-                document.getElementById('planMaxBanners').value = data.maxBanners;
-                document.getElementById('planHasCarousel').value = data.hasCarousel ? 'true' : 'false';
-                document.getElementById('planFeatures').value = data.features || '';
+                document.getElementById('planMaxBanners').value = data.maxBanners || 3;
+                document.getElementById('planHasCarousel').checked = data.hasCarousel;
             } else {
-                document.getElementById('planModalTitle').innerText = "Novo Plano";
+                form.reset();
                 document.getElementById('planId').value = "";
-                document.getElementById('planForm').reset();
-                document.getElementById('planHasCarousel').value = 'true';
             }
             document.getElementById('plan-modal').classList.remove('hidden');
         };
@@ -553,206 +396,23 @@ Vitrine personalizável"></textarea>
 
         window.savePlan = async (e) => {
             e.preventDefault();
-            const id = document.getElementById('planId').value || 'plan_' + Math.random().toString(36).substr(2, 9);
+            const id = document.getElementById('planId').value || 'plan_' + Date.now();
             const data = {
                 name: document.getElementById('planName').value,
-                price: parseFloat(document.getElementById('planPrice').value.replace(',','.')),
+                price: parseFloat(document.getElementById('planPrice').value.replace(',', '.')),
                 maxProducts: parseInt(document.getElementById('planMaxProducts').value),
                 maxBanners: parseInt(document.getElementById('planMaxBanners').value),
-                hasCarousel: document.getElementById('planHasCarousel').value === 'true',
-                features: document.getElementById('planFeatures').value
+                hasCarousel: document.getElementById('planHasCarousel').checked
             };
-            
             await setDoc(doc(db, "config_plans", id), data);
             closePlanModal();
         };
 
-        window.deletePlan = async (id) => {
-            if(confirm('Tem certeza? Lojas que usam este plano não serão afetadas imediatamente, mas não poderão selecioná-lo novamente.')) {
-                await deleteDoc(doc(db, "config_plans", id));
-            }
-        };
+        window.deletePlan = async (id) => { if(confirm("Apagar plano?")) await deleteDoc(doc(db, "config_plans", id)); };
+        window.deleteStore = async (slug) => { if(confirm("Excluir loja definitivamente?")) await deleteDoc(doc(db, "stores_registry", slug)); };
 
-        // Função para publicar planos para pré-cadastro
-        window.publishPlansForRegistration = async () => {
-            const plansSnapshot = await getDocs(collection(db, "config_plans"));
-            const plansData = plansSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            
-            // Publicar na coleção public_plans para acesso no pré-cadastro
-            const publicPlansRef = collection(db, "public_plans");
-            
-            // Limpar e recriar
-            const existing = await getDocs(publicPlansRef);
-            const deletePromises = existing.docs.map(async (doc) => {
-                await deleteDoc(doc.ref);
-            });
-            await Promise.all(deletePromises);
-            
-            // Adicionar novos
-            const addPromises = plansData.map(async (plan) => {
-                await setDoc(doc(publicPlansRef, plan.id), {
-                    name: plan.name,
-                    price: plan.price,
-                    maxProducts: plan.maxProducts,
-                    maxBanners: plan.maxBanners,
-                    hasCarousel: plan.hasCarousel,
-                    features: plan.features || '',
-                    isActive: true,
-                    publishedAt: serverTimestamp()
-                });
-            });
-            await Promise.all(addPromises);
-            
-            alert("✅ Planos publicados para pré-cadastro!");
-        };
-
-        // --- STORE MANAGEMENT ---
-        window.openEditModal = (data) => {
-            document.getElementById('editSlug').value = data.slug;
-            document.getElementById('editStoreName').value = data.storeName;
-            document.getElementById('editOwnerEmail').value = data.ownerEmail;
-            document.getElementById('editBillingDay').value = data.billingDay;
-            document.getElementById('editStorePlan').value = data.planId || "";
-            document.getElementById('edit-modal').classList.remove('hidden');
-        };
-
-        window.closeEditModal = () => document.getElementById('edit-modal').classList.add('hidden');
-
-        window.approveRequest = (data) => {
-            document.getElementById('requestId').value = data.id;
-            document.getElementById('storeName').value = data.storeName;
-            document.getElementById('adminEmail').value = data.email;
-            document.getElementById('storePhone').value = data.phone;
-            document.getElementById('storeSlug').value = data.storeName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, '-');
-            document.getElementById('adminPass').value = Math.random().toString(36).slice(-8);
-            
-            // Preencher o plano automaticamente se existir
-            if (data.planId) {
-                document.getElementById('storePlan').value = data.planId;
-            }
-            
-            document.getElementById('createTitle').textContent = "Confirmar Solicitação";
-            switchView('create');
-        };
-
-        window.deleteRequest = async (id) => {
-            if(confirm('Excluir solicitação?')) await deleteDoc(doc(db, "registration_requests", id));
-        };
-
-        window.toggleSuspend = async (slug, current) => {
-            const newStatus = current === 'active' ? 'suspended' : 'active';
-            if(confirm(`Deseja ${newStatus === 'active' ? 'Reativar' : 'Suspender'} a loja?`)) {
-                await updateDoc(doc(db, "stores_registry", slug), { status: newStatus });
-                await updateDoc(doc(db, "stores", slug, "config", "store"), { subscriptionStatus: newStatus });
-            }
-        };
-
-        window.deleteStore = async (slug) => {
-            if(confirm('ATENÇÃO: Isso excluirá o registro da loja e impedirá o acesso. Confirmar?')) {
-                await deleteDoc(doc(db, "stores_registry", slug));
-                await deleteDoc(doc(db, "stores", slug, "config", "store"));
-            }
-        };
-
-        window.saveStoreChanges = async (e) => {
-            e.preventDefault();
-            const slug = document.getElementById('editSlug').value;
-            const planId = document.getElementById('editStorePlan').value;
-            
-            // Buscar detalhes do plano selecionado para aplicar as regras
-            const planDetails = availablePlans.find(p => p.id === planId) || {};
-
-            const commonData = {
-                storeName: document.getElementById('editStoreName').value,
-                ownerEmail: document.getElementById('editOwnerEmail').value,
-                billingDay: document.getElementById('editBillingDay').value,
-                planId: planId,
-                // Salvar snapshots das configs do plano na loja para performance/segurança
-                maxProducts: planDetails.maxProducts || 50,
-                maxBanners: planDetails.maxBanners || 1,
-                hasCarousel: planDetails.hasCarousel ?? false
-            };
-
-            await updateDoc(doc(db, "stores_registry", slug), commonData);
-            await updateDoc(doc(db, `stores/${slug}/config/store`), commonData);
-            closeEditModal();
-        };
-
-        window.triggerPasswordReset = async () => {
-            const email = document.getElementById('editOwnerEmail').value;
-            if(confirm(`Enviar link para ${email}?`)) await sendPasswordResetEmail(auth, email);
-        };
-
-        document.getElementById('createStoreForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            // Validar se há plano selecionado
-            const planId = document.getElementById('storePlan').value;
-            if(!planId) { alert("Selecione um plano."); return; }
-            
-            const planDetails = availablePlans.find(p => p.id === planId);
-            if(!planDetails) { alert("Erro ao carregar dados do plano."); return; }
-
-            isDoingAuth = true;
-            const rid = document.getElementById('requestId').value;
-            const name = document.getElementById('storeName').value;
-            const slug = document.getElementById('storeSlug').value;
-            const email = document.getElementById('adminEmail').value;
-            const pass = document.getElementById('adminPass').value;
-            const phone = document.getElementById('storePhone').value;
-            const day = document.getElementById('billingDay').value;
-
-            try {
-                const cred = await createUserWithEmailAndPassword(auth, email, pass);
-                
-                const storeData = { 
-                    storeName: name, 
-                    ownerEmail: email, 
-                    ownerPhone: phone, 
-                    billingDay: day, 
-                    subscriptionStatus: 'active', 
-                    isStoreOpen: true, 
-                    primaryColor: '#6366f1',
-                    // Configs do Plano
-                    planId: planId,
-                    maxProducts: planDetails.maxProducts,
-                    maxBanners: planDetails.maxBanners,
-                    hasCarousel: planDetails.hasCarousel
-                };
-
-                // 1. Config detalhada
-                await setDoc(doc(db, "stores", slug, "config", "store"), storeData);
-                
-                // 2. Diretório de Admin
-                await setDoc(doc(db, "admin_directory", cred.user.uid), { storeId: slug, role: 'owner', email: email });
-                
-                // 3. Registro Geral (Lista do Super Admin)
-                await setDoc(doc(db, "stores_registry", slug), { 
-                    storeName: name, 
-                    slug: slug, 
-                    ownerEmail: email, 
-                    status: 'active', 
-                    billingDay: day,
-                    ...storeData // Inclui as infos do plano para mostrar na tabela
-                });
-                
-                if(rid) await deleteDoc(doc(db, "registration_requests", rid));
-
-                document.getElementById('resEmail').textContent = email;
-                document.getElementById('resPass').textContent = pass;
-                document.getElementById('resPlan').textContent = planDetails.name;
-                
-                document.getElementById('btnWhatsAppNotify').onclick = () => {
-                    const msg = `Sua loja ${name} está ativa! \nPlano: ${planDetails.name} \nLogin: ${email} \nSenha: ${pass}`;
-                    window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank');
-                };
-                
-                await signOut(auth);
-                isDoingAuth = false;
-                await signInAnonymously(auth);
-                switchView('result-view');
-            } catch(err) { alert(err.message); isDoingAuth = false; }
-        });
+        lucide.createIcons();
     </script>
 </body>
 </html>
+
