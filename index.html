@@ -25,6 +25,20 @@
         }
         .input-dark:focus { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); }
         .input-dark:disabled { opacity: 0.5; cursor: not-allowed; }
+        .select-dark {
+            width: 100%;
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: white;
+            outline: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+        }
         .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -41,6 +55,14 @@
                 <div>
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Nome da Loja</label>
                     <input type="text" id="editStoreName" required class="input-dark">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Plano Contratado</label>
+                    <select id="editStorePlan" class="select-dark">
+                        <option value="basic">Básico (50 prods)</option>
+                        <option value="standard">Padrão (150 prods + Carrossel)</option>
+                        <option value="premium">Completo (400 prods + Topo)</option>
+                    </select>
                 </div>
                 <div>
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-2">E-mail do Responsável</label>
@@ -113,7 +135,7 @@
                         <table class="w-full text-left">
                             <thead class="bg-slate-800 text-slate-400 text-xs uppercase font-semibold">
                                 <tr>
-                                    <th class="p-5">Loja</th>
+                                    <th class="p-5">Loja / Plano</th>
                                     <th class="p-5">Dia Venc.</th>
                                     <th class="p-5">E-mail</th>
                                     <th class="p-5">Status</th>
@@ -142,6 +164,17 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div><label class="block text-xs font-bold uppercase text-slate-500 mb-2">Nome da Loja</label><input type="text" id="storeName" required class="input-dark"></div>
                             <div><label class="block text-xs font-bold uppercase text-slate-500 mb-2">Slug (ID da URL)</label><input type="text" id="storeSlug" required class="input-dark font-mono text-indigo-300"></div>
+                            
+                            <!-- SELETOR DE PLANO (NOVO) -->
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Plano Contratado</label>
+                                <select id="storePlan" class="select-dark">
+                                    <option value="basic">Básico (R$ 39,90 - 50 Produtos)</option>
+                                    <option value="standard" selected>Padrão (R$ 59,90 - 150 Produtos + Carrossel)</option>
+                                    <option value="premium">Completo (R$ 89,90 - 400 Produtos + Prioridade)</option>
+                                </select>
+                            </div>
+
                             <div><label class="block text-xs font-bold uppercase text-slate-500 mb-2">Email do Lojista</label><input type="email" id="adminEmail" required class="input-dark"></div>
                             <div><label class="block text-xs font-bold uppercase text-slate-500 mb-2">WhatsApp</label><input type="text" id="storePhone" required class="input-dark" placeholder="5511999999999"></div>
                             <div><label class="block text-xs font-bold uppercase text-slate-500 mb-2">Senha Provisória</label><input type="text" id="adminPass" required class="input-dark"></div>
@@ -159,6 +192,7 @@
                         <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-left text-xs space-y-1">
                             <p><b>E-mail:</b> <span id="resEmail"></span></p>
                             <p><b>Senha:</b> <span id="resPass"></span></p>
+                            <p><b>Plano:</b> <span id="resPlan" class="uppercase font-bold text-indigo-400"></span></p>
                         </div>
                         <button id="btnWhatsAppNotify" class="w-full bg-[#25D366] text-white font-bold py-4 rounded-xl flex justify-center items-center gap-2">Notificar via WhatsApp</button>
                         <button onclick="switchView('list')" class="w-full text-slate-400 text-sm py-2">Voltar à Lista</button>
@@ -193,6 +227,14 @@
             });
         });
 
+        function getPlanBadge(plan) {
+            switch(plan) {
+                case 'premium': return '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30">COMPLETO</span>';
+                case 'standard': return '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">PADRÃO</span>';
+                default: return '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-500/20 text-slate-400 border border-slate-500/30">BÁSICO</span>';
+            }
+        }
+
         function setupListeners() {
             // Lojas Ativas
             onSnapshot(collection(db, "stores_registry"), (snapshot) => {
@@ -202,13 +244,20 @@
                     const sJson = JSON.stringify(s).replace(/'/g, "&#39;");
                     return `
                         <tr class="border-b border-slate-800 hover:bg-slate-900/50 transition-colors group">
-                            <td class="p-5 font-bold text-white">${s.storeName} <br><span class="text-[10px] text-slate-500 font-mono">${s.slug}</span></td>
+                            <td class="p-5 font-bold text-white">
+                                ${s.storeName}
+                                <div class="flex gap-2 items-center mt-1">
+                                    <span class="text-[10px] text-slate-500 font-mono">${s.slug}</span>
+                                    ${getPlanBadge(s.plan)}
+                                </div>
+                            </td>
                             <td class="p-5 text-slate-400">Dia ${s.billingDay}</td>
-                            <td class="p-5 text-slate-400">${s.ownerEmail}</td>
+                            <td class="p-5 text-slate-400 text-xs">${s.ownerEmail}</td>
                             <td class="p-5"><span class="px-2 py-1 rounded text-[10px] font-bold ${s.status === 'active' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}">${s.status.toUpperCase()}</span></td>
                             <td class="p-5 text-right flex gap-2 justify-end">
-                                <button onclick='openEditModal(${sJson})' class="p-2 text-indigo-400 hover:bg-indigo-900/30 rounded-lg"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
-                                <button onclick="toggleSuspend('${s.slug}', '${s.status}')" class="p-2 text-slate-500 hover:text-white"><i data-lucide="power" class="w-4 h-4"></i></button>
+                                <button onclick='openEditModal(${sJson})' class="p-2 text-indigo-400 hover:bg-indigo-900/30 rounded-lg" title="Editar"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                                <button onclick="toggleSuspend('${s.slug}', '${s.status}')" class="p-2 text-slate-500 hover:text-white" title="${s.status === 'active' ? 'Suspender' : 'Ativar'}"><i data-lucide="power" class="w-4 h-4"></i></button>
+                                <button onclick="deleteStore('${s.slug}')" class="p-2 text-slate-600 hover:text-red-500 hover:bg-red-500/10 rounded-lg" title="Excluir Definitivamente"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                             </td>
                         </tr>
                     `;
@@ -216,7 +265,7 @@
                 lucide.createIcons();
             });
 
-            // Solicitações Pendentes
+            // Solicitações
             onSnapshot(collection(db, "registration_requests"), (snapshot) => {
                 const list = document.getElementById('requestsList');
                 const badge = document.getElementById('reqCountBadge');
@@ -278,6 +327,8 @@
             document.getElementById('editStoreName').value = data.storeName;
             document.getElementById('editOwnerEmail').value = data.ownerEmail;
             document.getElementById('editBillingDay').value = data.billingDay;
+            // Preencher plano
+            document.getElementById('editStorePlan').value = data.plan || 'basic';
             document.getElementById('edit-modal').classList.remove('hidden');
         };
 
@@ -306,13 +357,24 @@
             }
         };
 
+        window.deleteStore = async (slug) => {
+            if(confirm('ATENÇÃO: Isso excluirá o registro da loja e impedirá o acesso. A loja não aparecerá mais no sistema. Confirmar exclusão?')) {
+                // Remove do registro (Lista)
+                await deleteDoc(doc(db, "stores_registry", slug));
+                // Remove a config (Acesso) - Soft delete, os produtos ficam "órfãos" no banco
+                await deleteDoc(doc(db, "stores", slug, "config", "store"));
+                alert('Loja excluída com sucesso.');
+            }
+        };
+
         window.saveStoreChanges = async (e) => {
             e.preventDefault();
             const slug = document.getElementById('editSlug').value;
             const data = {
                 storeName: document.getElementById('editStoreName').value,
                 ownerEmail: document.getElementById('editOwnerEmail').value,
-                billingDay: document.getElementById('editBillingDay').value
+                billingDay: document.getElementById('editBillingDay').value,
+                plan: document.getElementById('editStorePlan').value
             };
             await updateDoc(doc(db, "stores_registry", slug), data);
             await updateDoc(doc(db, `stores/${slug}/config/store`), data);
@@ -334,20 +396,47 @@
             const pass = document.getElementById('adminPass').value;
             const phone = document.getElementById('storePhone').value;
             const day = document.getElementById('billingDay').value;
+            const plan = document.getElementById('storePlan').value;
 
             try {
                 const cred = await createUserWithEmailAndPassword(auth, email, pass);
-                await setDoc(doc(db, "stores", slug, "config", "store"), { storeName: name, ownerEmail: email, ownerPhone: phone, billingDay: day, subscriptionStatus: 'active', isStoreOpen: true, primaryColor: '#6366f1' });
+                
+                // Config detalhada
+                await setDoc(doc(db, "stores", slug, "config", "store"), { 
+                    storeName: name, 
+                    ownerEmail: email, 
+                    ownerPhone: phone, 
+                    billingDay: day, 
+                    subscriptionStatus: 'active', 
+                    isStoreOpen: true, 
+                    primaryColor: '#6366f1',
+                    plan: plan // Salva o plano na config da loja
+                });
+                
+                // Diretório de Admin (Map UID -> Store)
                 await setDoc(doc(db, "admin_directory", cred.user.uid), { storeId: slug, role: 'owner', email: email });
-                await setDoc(doc(db, "stores_registry", slug), { storeName: name, slug: slug, ownerEmail: email, status: 'active', billingDay: day });
+                
+                // Registro Geral (Lista do Super Admin)
+                await setDoc(doc(db, "stores_registry", slug), { 
+                    storeName: name, 
+                    slug: slug, 
+                    ownerEmail: email, 
+                    status: 'active', 
+                    billingDay: day,
+                    plan: plan // Salva o plano no registro
+                });
+                
                 if(rid) await deleteDoc(doc(db, "registration_requests", rid));
 
                 document.getElementById('resEmail').textContent = email;
                 document.getElementById('resPass').textContent = pass;
+                document.getElementById('resPlan').textContent = plan;
+                
                 document.getElementById('btnWhatsAppNotify').onclick = () => {
-                    const msg = `Sua loja ${name} está ativa! \nLogin: ${email} \nSenha: ${pass}`;
+                    const msg = `Sua loja ${name} está ativa! \nPlano: ${plan.toUpperCase()} \nLogin: ${email} \nSenha: ${pass}`;
                     window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank');
                 };
+                
                 await signOut(auth);
                 isDoingAuth = false;
                 await signInAnonymously(auth);
