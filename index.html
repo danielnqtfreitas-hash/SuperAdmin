@@ -76,12 +76,19 @@
                         <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Max. Banners</label>
                         <input type="number" id="planMaxBanners" required class="input-dark" value="3">
                     </div>
-                    <div class="flex items-end pb-3">
-                        <label class="flex items-center cursor-pointer relative">
-                            <input type="checkbox" id="planHasCarousel" class="sr-only peer">
-                            <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                            <span class="ml-3 text-sm font-medium text-slate-300">Carrossel Ativo</span>
-                        </label>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Tem Carrossel?</label>
+                        <select id="planHasCarousel" class="select-dark">
+                            <option value="true">Sim</option>
+                            <option value="false">Não</option>
+                        </select>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Benefícios (um por linha)</label>
+                        <textarea id="planFeatures" class="input-dark" rows="4" placeholder="Ex: Até 50 produtos
+1 banner de destaque
+Suporte por WhatsApp
+Vitrine personalizável"></textarea>
                     </div>
                 </div>
                 
@@ -209,10 +216,18 @@
                 <!-- VIEW: PLANS (GERENCIAR PLANOS) -->
                 <div id="view-plans" class="hidden animate-fade-in">
                     <div class="flex justify-between items-center mb-8">
-                        <h2 class="text-2xl font-bold text-white">Planos de Assinatura</h2>
-                        <button onclick="openPlanModal()" class="bg-pink-600 hover:bg-pink-500 text-white font-bold py-2 px-4 rounded-xl shadow-lg flex items-center gap-2 text-sm">
-                            <i data-lucide="plus" class="w-4 h-4"></i> Novo Plano
-                        </button>
+                        <div>
+                            <h2 class="text-2xl font-bold text-white">Planos de Assinatura</h2>
+                            <p class="text-sm text-slate-400 mt-1">Gerencie os planos disponíveis para pré-cadastro</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="publishPlansForRegistration()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-xl shadow-lg flex items-center gap-2 text-sm">
+                                <i data-lucide="upload" class="w-4 h-4"></i> Publicar para Pré-cadastro
+                            </button>
+                            <button onclick="openPlanModal()" class="bg-pink-600 hover:bg-pink-500 text-white font-bold py-2 px-4 rounded-xl shadow-lg flex items-center gap-2 text-sm">
+                                <i data-lucide="plus" class="w-4 h-4"></i> Novo Plano
+                            </button>
+                        </div>
                     </div>
                     <div id="plansGrid" class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <!-- Plans rendered here -->
@@ -280,7 +295,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, onSnapshot, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyAdwsGBTApwOwqr37qCv72gdPRbipsZG0Q", authDomain: "meuestoque-1badc.firebaseapp.com", projectId: "meuestoque-1badc", storageBucket: "meuestoque-1badc.appspot.com", messagingSenderId: "730003067834", appId: "1:730003067834:web:b205f1ea59053345960383" };
         
@@ -403,6 +418,7 @@
                                         <i data-lucide="${p.hasCarousel ? 'check-circle' : 'x-circle'}" class="w-4 h-4 ${p.hasCarousel ? 'text-green-500' : 'text-slate-600'}"></i> 
                                         ${p.hasCarousel ? 'Carrossel Ativo' : 'Sem Carrossel'}
                                     </li>
+                                    ${p.features ? p.features.split('\n').map(f => `<li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-green-500"></i> ${f.trim()}</li>`).join('') : ''}
                                 </ul>
                             </div>
                             <div class="flex gap-2 pt-4 border-t border-slate-800">
@@ -445,12 +461,35 @@
                 list.innerHTML = snapshot.docs.map(d => {
                     const r = d.data();
                     const rJson = JSON.stringify({id: d.id, ...r}).replace(/'/g, "&#39;");
+                    
+                    // Info do plano
+                    const planInfo = r.planId ? `
+                        <div class="mt-3 p-3 bg-slate-800 rounded-xl border border-slate-700">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-xs font-bold text-slate-400">PLANO SELECIONADO:</span>
+                                <span class="text-xs font-bold text-green-400">${r.planName || r.planId}</span>
+                            </div>
+                            <div class="text-xs text-slate-500">
+                                <div>${r.planPrice ? `R$ ${r.planPrice.toFixed(2)}/mês` : 'Preço não informado'}</div>
+                                <div class="flex gap-3 mt-1">
+                                    <span>Produtos: ${r.planFeatures?.maxProducts || 'N/A'}</span>
+                                    <span>Banners: ${r.planFeatures?.maxBanners || 'N/A'}</span>
+                                    <span>Carrossel: ${r.planFeatures?.hasCarousel ? 'Sim' : 'Não'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    ` : '';
+                    
                     return `
                         <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl group hover:border-indigo-500/50 transition-all">
-                            <div class="flex justify-between items-start mb-2"><span class="bg-amber-500/10 text-amber-500 border border-amber-500/30 px-2 py-0.5 rounded text-[10px] font-bold">SOLICITAÇÃO</span></div>
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="bg-amber-500/10 text-amber-500 border border-amber-500/30 px-2 py-0.5 rounded text-[10px] font-bold">SOLICITAÇÃO</span>
+                                ${r.planName ? `<span class="text-[10px] font-bold bg-green-500/10 text-green-400 px-2 py-0.5 rounded border border-green-500/30">${r.planName}</span>` : ''}
+                            </div>
                             <h4 class="text-white font-bold text-lg">${r.storeName}</h4>
                             <p class="text-slate-400 text-xs mt-1"><b>Resp:</b> ${r.ownerName}</p>
                             <p class="text-slate-400 text-xs"><b>E-mail:</b> ${r.email}</p>
+                            ${planInfo}
                             <div class="flex gap-2 mt-6">
                                 <button onclick='approveRequest(${rJson})' class="flex-1 bg-indigo-600 text-white text-xs font-bold py-2.5 rounded-lg">Aprovar Cadastro</button>
                                 <button onclick="deleteRequest('${d.id}')" class="p-2.5 border border-slate-700 text-slate-500 hover:text-red-400 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
@@ -499,12 +538,13 @@
                 document.getElementById('planPrice').value = data.price;
                 document.getElementById('planMaxProducts').value = data.maxProducts;
                 document.getElementById('planMaxBanners').value = data.maxBanners;
-                document.getElementById('planHasCarousel').checked = data.hasCarousel;
+                document.getElementById('planHasCarousel').value = data.hasCarousel ? 'true' : 'false';
+                document.getElementById('planFeatures').value = data.features || '';
             } else {
                 document.getElementById('planModalTitle').innerText = "Novo Plano";
                 document.getElementById('planId').value = "";
                 document.getElementById('planForm').reset();
-                document.getElementById('planHasCarousel').checked = true;
+                document.getElementById('planHasCarousel').value = 'true';
             }
             document.getElementById('plan-modal').classList.remove('hidden');
         };
@@ -519,7 +559,8 @@
                 price: parseFloat(document.getElementById('planPrice').value.replace(',','.')),
                 maxProducts: parseInt(document.getElementById('planMaxProducts').value),
                 maxBanners: parseInt(document.getElementById('planMaxBanners').value),
-                hasCarousel: document.getElementById('planHasCarousel').checked
+                hasCarousel: document.getElementById('planHasCarousel').value === 'true',
+                features: document.getElementById('planFeatures').value
             };
             
             await setDoc(doc(db, "config_plans", id), data);
@@ -530,6 +571,39 @@
             if(confirm('Tem certeza? Lojas que usam este plano não serão afetadas imediatamente, mas não poderão selecioná-lo novamente.')) {
                 await deleteDoc(doc(db, "config_plans", id));
             }
+        };
+
+        // Função para publicar planos para pré-cadastro
+        window.publishPlansForRegistration = async () => {
+            const plansSnapshot = await getDocs(collection(db, "config_plans"));
+            const plansData = plansSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            
+            // Publicar na coleção public_plans para acesso no pré-cadastro
+            const publicPlansRef = collection(db, "public_plans");
+            
+            // Limpar e recriar
+            const existing = await getDocs(publicPlansRef);
+            const deletePromises = existing.docs.map(async (doc) => {
+                await deleteDoc(doc.ref);
+            });
+            await Promise.all(deletePromises);
+            
+            // Adicionar novos
+            const addPromises = plansData.map(async (plan) => {
+                await setDoc(doc(publicPlansRef, plan.id), {
+                    name: plan.name,
+                    price: plan.price,
+                    maxProducts: plan.maxProducts,
+                    maxBanners: plan.maxBanners,
+                    hasCarousel: plan.hasCarousel,
+                    features: plan.features || '',
+                    isActive: true,
+                    publishedAt: serverTimestamp()
+                });
+            });
+            await Promise.all(addPromises);
+            
+            alert("✅ Planos publicados para pré-cadastro!");
         };
 
         // --- STORE MANAGEMENT ---
@@ -551,6 +625,12 @@
             document.getElementById('storePhone').value = data.phone;
             document.getElementById('storeSlug').value = data.storeName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, '-');
             document.getElementById('adminPass').value = Math.random().toString(36).slice(-8);
+            
+            // Preencher o plano automaticamente se existir
+            if (data.planId) {
+                document.getElementById('storePlan').value = data.planId;
+            }
+            
             document.getElementById('createTitle').textContent = "Confirmar Solicitação";
             switchView('create');
         };
@@ -676,5 +756,3 @@
     </script>
 </body>
 </html>
-
-
