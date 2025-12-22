@@ -271,48 +271,107 @@
         let allStores = [];
         let config = { audioAlert: true, webhookUrl: '' };
         let lastRequestCount = -1;
+        let listenersInitialized = false; // Controle para evitar duplicação de listeners
 
         const formatBRL = (v) => Number(v).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
 
-        // AUTH
+        // --- AUTH E LOGIN (Lógica Corrigida) ---
+
+        // 1. O formulário apenas faz o pedido de login, não manipula a tela
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnLogin');
-            btn.disabled = true; btn.innerHTML = 'Verificando...';
+            const errorDiv = document.getElementById('loginError');
+            
+            // UI Loading
+            btn.disabled = true; 
+            btn.innerHTML = '<span class="animate-pulse">Validando Credenciais...</span>';
+            errorDiv.classList.add('hidden');
+
             try {
-                const cred = await signInWithEmailAndPassword(auth, document.getElementById('loginEmail').value, document.getElementById('loginPassword').value);
-                const adminDoc = await getDoc(doc(db, "internal_admins", cred.user.uid));
-                if (adminDoc.exists()) { document.getElementById('login-screen').classList.add('hidden'); setupAllListeners(); }
-                else { await signOut(auth); document.getElementById('loginError').classList.remove('hidden'); }
-            } catch (err) { document.getElementById('loginError').classList.remove('hidden'); }
-            btn.disabled = false; btn.innerHTML = 'Aceder ao Painel';
+                // Apenas faz o login. O redirecionamento acontece no onAuthStateChanged abaixo
+                await signInWithEmailAndPassword(auth, document.getElementById('loginEmail').value, document.getElementById('loginPassword').value);
+                // Não fazemos nada aqui, o listener vai pegar a mudança de estado
+            } catch (err) { 
+                console.error("Erro ao logar:", err);
+                errorDiv.innerText = "Email ou senha incorretos.";
+                errorDiv.classList.remove('hidden');
+                btn.disabled = false; 
+                btn.innerHTML = 'ACEDER AO PAINEL';
+            }
         });
 
+        // 2. O Observador é a ÚNICA fonte de verdade para mostrar/esconder telas
         onAuthStateChanged(auth, async (user) => {
+            const loginScreen = document.getElementById('login-screen');
+            const btn = document.getElementById('btnLogin');
+
             if (user) {
-                const adminDoc = await getDoc(doc(db, "internal_admins", user.uid));
-                if (adminDoc.exists()) { document.getElementById('login-screen').classList.add('hidden'); setupAllListeners(); }
-                else { signOut(auth); }
-            } else { document.getElementById('login-screen').classList.remove('hidden'); }
+                // Usuário detectado (Login novo ou Refresh da página)
+                // Se estiver na tela de login, mostramos feedback visual que estamos checando permissão
+                if(!loginScreen.classList.contains('hidden')) {
+                     btn.innerHTML = '<span class="animate-pulse">Verificando Permissões...</span>';
+                     btn.disabled = true;
+                }
+
+                try {
+                    const adminDoc = await getDoc(doc(db, "internal_admins", user.uid));
+                    
+                    if (adminDoc.exists()) { 
+                        // SUCESSO: É admin e está logado
+                        loginScreen.classList.add('hidden'); 
+                        
+                        // Reseta botão de login para o futuro
+                        btn.disabled = false;
+                        btn.innerHTML = 'ACEDER AO PAINEL';
+
+                        if (!listenersInitialized) {
+                            setupAllListeners();
+                            listenersInitialized = true;
+                        }
+                    } else { 
+                        // FALHA: Logado no Firebase, mas não é Admin no Firestore
+                        throw new Error("Permissão negada: Não é admin.");
+                    }
+                } catch (error) {
+                    console.error("Falha na verificação:", error);
+                    await signOut(auth); // Desloga forçado
+                    document.getElementById('loginError').innerText = "Acesso restrito a Super Admins.";
+                    document.getElementById('loginError').classList.remove('hidden');
+                    loginScreen.classList.remove('hidden');
+                    btn.disabled = false;
+                    btn.innerHTML = 'ACEDER AO PAINEL';
+                }
+            } else { 
+                // Ninguém logado
+                loginScreen.classList.remove('hidden'); 
+                btn.disabled = false;
+                btn.innerHTML = 'ACEDER AO PAINEL';
+            }
             lucide.createIcons();
         });
 
         window.handleSignOut = () => signOut(auth).then(() => window.location.reload());
 
-        // LISTENERS
+        // --- LISTENERS DO SISTEMA ---
         function setupAllListeners() {
+            // Configurações
             onSnapshot(doc(db, "config_superadmin", "notifications"), (d) => {
                 if(d.exists()) { config = d.data(); document.getElementById('webhookUrl').value = config.webhookUrl || ''; updateAudioUI(); }
             });
 
+            // Planos
             onSnapshot(collection(db, "config_plans"), (snap) => {
                 availablePlans = snap.docs.map(d => ({id: d.id, ...d.data()}));
                 const grid = document.getElementById('plansGrid');
                 const sSelect = document.getElementById('storePlan');
                 const eSelect = document.getElementById('editPlan');
+                
+                // Limpa selects antes de repopular para evitar duplicatas
                 sSelect.innerHTML = '<option value="">Selecione o plano...</option>';
                 eSelect.innerHTML = '';
-                grid.innerHTML = availablePlans.map(p => {
+                
+                const plansHTML = availablePlans.map(p => {
                     sSelect.insertAdjacentHTML('beforeend', `<option value="${p.id}">${p.name}</option>`);
                     eSelect.insertAdjacentHTML('beforeend', `<option value="${p.id}">${p.name}</option>`);
                     return `
@@ -331,31 +390,34 @@
                         </div>
                     `;
                 }).join('');
+                
+                grid.innerHTML = plansHTML;
                 lucide.createIcons();
             });
 
+            // Lojas
             onSnapshot(collection(db, "stores_registry"), (snap) => {
                 allStores = snap.docs.map(d => d.data());
                 renderStoreTable(allStores);
             });
 
-            // SOLICITAÇÕES COMPLETAS
+            // Solicitações
             onSnapshot(collection(db, "registration_requests"), (snap) => {
                 const count = snap.size;
-                document.getElementById('reqCountBadge').textContent = count;
-                document.getElementById('reqCountBadge').classList.toggle('hidden', count === 0);
+                const badge = document.getElementById('reqCountBadge');
+                
+                badge.textContent = count;
+                badge.classList.toggle('hidden', count === 0);
                 document.getElementById('emptyRequests').classList.toggle('hidden', count > 0);
 
                 if(lastRequestCount !== -1 && count > lastRequestCount) {
-                    if(config.audioAlert) new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3').play();
+                    if(config.audioAlert) new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3').play().catch(e => console.log("Audio play blocked"));
                 }
                 lastRequestCount = count;
 
                 document.getElementById('requestsList').innerHTML = snap.docs.map(d => {
                     const r = d.data();
                     const rJson = JSON.stringify({id: d.id, ...r}).replace(/'/g, "&#39;");
-                    
-                    // Busca dados do plano se existir na request
                     const planDetails = r.planId ? availablePlans.find(p => p.id === r.planId) : null;
                     const planBox = r.planId ? `
                         <div class="mt-4 p-3 bg-indigo-500/5 border border-indigo-500/20 rounded-xl">
@@ -377,16 +439,13 @@
                             </div>
                             <h4 class="text-white font-bold text-xl mb-1">${r.storeName}</h4>
                             <p class="text-slate-400 text-xs mb-4 flex items-center gap-2"><i data-lucide="mail" class="w-3 h-3"></i> ${r.email}</p>
-                            
                             <div class="space-y-2 py-4 border-y border-slate-800/50">
-                                <p class="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2"><i data-lucide="user" class="w-3.5 h-3.5"></i> Responsável: <span class="text-white ml-auto">${r.ownerName || 'Não informado'}</span></p>
-                                <p class="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2"><i data-lucide="phone" class="w-3.5 h-3.5"></i> WhatsApp: <span class="text-white ml-auto">${r.phone || 'Sem contato'}</span></p>
+                                <p class="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2"><i data-lucide="user" class="w-3.5 h-3.5"></i> Resp: <span class="text-white ml-auto">${r.ownerName || 'N/A'}</span></p>
+                                <p class="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2"><i data-lucide="phone" class="w-3.5 h-3.5"></i> Zap: <span class="text-white ml-auto">${r.phone || 'N/A'}</span></p>
                             </div>
-
                             ${planBox}
-
                             <div class="mt-6 flex gap-2">
-                                <button onclick='approveRequest(${rJson})' class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all">Analisar & Ativar</button>
+                                <button onclick='approveRequest(${rJson})' class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all">Analisar</button>
                                 <button onclick="deleteRequest('${d.id}')" class="p-3.5 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-2xl transition-all"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                             </div>
                         </div>
@@ -398,6 +457,7 @@
 
         function renderStoreTable(list) {
             const tbody = document.getElementById('storesTableBody');
+            if(!tbody) return;
             tbody.innerHTML = list.map(s => {
                 const plan = availablePlans.find(p => p.id === s.planId)?.name || 'N/A';
                 return `
@@ -417,7 +477,9 @@
             lucide.createIcons();
         }
 
-        // ATIVAÇÃO DE LOJA (MÉTODO INSTÂNCIA SECUNDÁRIA)
+        // --- AÇÕES DO SISTEMA (Mantidas iguais, apenas garantindo escopo global) ---
+        
+        // Criar Loja
         document.getElementById('createStoreForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnSubmitStore');
@@ -432,6 +494,7 @@
             const phone = document.getElementById('storePhone').value;
             const rid = document.getElementById('requestId').value;
 
+            // Instância Secundária para não deslogar o Admin
             const secApp = initializeApp(firebaseConfig, "sec_app_" + Date.now());
             const secAuth = getAuth(secApp);
 
@@ -459,11 +522,14 @@
 
                 await signOut(secAuth); await deleteApp(secApp);
                 switchView('result-view');
-            } catch (err) { alert(err.message); await deleteApp(secApp); }
+            } catch (err) { 
+                alert("Erro ao criar loja: " + err.message); 
+                await deleteApp(secApp); 
+            }
             btn.disabled = false; btn.innerHTML = 'Confirmar e Gerar Acesso';
         });
 
-        // ACTIONS
+        // Helpers e Globais
         window.handleSearch = (v) => {
             const term = v.toLowerCase();
             const filtered = allStores.filter(s => s.storeName.toLowerCase().includes(term) || s.slug.toLowerCase().includes(term));
@@ -485,15 +551,17 @@
         window.savePlan = async (e) => {
             e.preventDefault();
             const id = document.getElementById('planId').value || 'plan_' + Date.now();
-            await setDoc(doc(db, "config_plans", id), {
-                name: document.getElementById('planName').value,
-                price: parseFloat(document.getElementById('planPrice').value),
-                maxProducts: parseInt(document.getElementById('planMaxProducts').value),
-                maxBanners: parseInt(document.getElementById('planMaxBanners').value),
-                hasCarousel: document.getElementById('planHasCarousel').value === 'true',
-                features: document.getElementById('planFeatures').value
-            });
-            closePlanModal();
+            try {
+                await setDoc(doc(db, "config_plans", id), {
+                    name: document.getElementById('planName').value,
+                    price: parseFloat(document.getElementById('planPrice').value),
+                    maxProducts: parseInt(document.getElementById('planMaxProducts').value),
+                    maxBanners: parseInt(document.getElementById('planMaxBanners').value),
+                    hasCarousel: document.getElementById('planHasCarousel').value === 'true',
+                    features: document.getElementById('planFeatures').value
+                });
+                closePlanModal();
+            } catch(e) { alert("Erro ao salvar plano: " + e.message); }
         };
 
         window.openEditModal = (s) => {
@@ -517,11 +585,12 @@
         };
 
         window.publishPlansForRegistration = async () => {
+            if(!confirm("Isso atualizará os planos visíveis no formulário público. Continuar?")) return;
             const pubRef = collection(db, "public_plans");
             const snap = await getDocs(pubRef);
             await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
             await Promise.all(availablePlans.map(p => setDoc(doc(pubRef, p.id), {...p, isActive: true, publishedAt: serverTimestamp()})));
-            alert("Sincronizado!");
+            alert("Planos públicos atualizados com sucesso!");
         };
 
         window.approveRequest = (r) => {
@@ -535,32 +604,52 @@
             switchView('create');
         };
 
-        window.deleteRequest = async (id) => { if(confirm("Remover esta solicitação?")) await deleteDoc(doc(db, "registration_requests", id)); };
+        window.deleteRequest = async (id) => { if(confirm("Remover esta solicitação permanentemente?")) await deleteDoc(doc(db, "registration_requests", id)); };
+        
         window.toggleSuspend = async (slug, curr) => {
             const next = curr === 'active' ? 'suspended' : 'active';
+            if(!confirm(`Deseja alterar o status da loja para: ${next.toUpperCase()}?`)) return;
             await updateDoc(doc(db, "stores_registry", slug), { status: next });
             await updateDoc(doc(db, "stores", slug, "config", "store"), { subscriptionStatus: next });
         };
-        window.deleteStore = async (s) => { if(confirm("Deseja apagar definitivamente?")) await deleteDoc(doc(db, "stores_registry", s)); };
-        window.deletePlan = async (id) => { if(confirm("Apagar plano?")) await deleteDoc(doc(db, "config_plans", id)); };
+        
+        window.deleteStore = async (s) => { 
+            if(confirm("ATENÇÃO: Isso apagará o registro da loja. Os dados internos (coleções de produtos) não serão apagados automaticamente. Continuar?")) 
+            await deleteDoc(doc(db, "stores_registry", s)); 
+        };
+        
+        window.deletePlan = async (id) => { if(confirm("Apagar este plano?")) await deleteDoc(doc(db, "config_plans", id)); };
 
         // NAVIGATION
         window.switchView = (v) => {
             ['list', 'requests', 'plans', 'create', 'result-view', 'settings'].forEach(x => {
-                document.getElementById(`view-${x}`).classList.add('hidden');
-                if(document.getElementById(`nav-${x}`)) document.getElementById(`nav-${x}`).classList.remove('bg-indigo-600/10', 'text-indigo-400', 'border-indigo-600/50');
+                const el = document.getElementById(`view-${x}`);
+                const nav = document.getElementById(`nav-${x}`);
+                if(el) el.classList.add('hidden');
+                if(nav) nav.classList.remove('bg-indigo-600/10', 'text-indigo-400', 'border-indigo-600/50');
             });
-            document.getElementById(`view-${v}`).classList.remove('hidden');
-            if(document.getElementById(`nav-${v}`)) document.getElementById(`nav-${v}`).classList.add('bg-indigo-600/10', 'text-indigo-400', 'border-indigo-600/50');
-            document.getElementById('viewTitle').textContent = v === 'list' ? 'Gestão de Lojas' : (v === 'requests' ? 'Solicitações Pendentes' : 'Ativação de Vitrine');
-            if(window.innerWidth < 768) toggleSidebar();
+            
+            const target = document.getElementById(`view-${v}`);
+            if(target) target.classList.remove('hidden');
+            
+            const navTarget = document.getElementById(`nav-${v}`);
+            if(navTarget) navTarget.classList.add('bg-indigo-600/10', 'text-indigo-400', 'border-indigo-600/50');
+            
+            const titles = { 'list': 'Gestão de Lojas', 'requests': 'Solicitações Pendentes', 'plans': 'Catálogo de Planos', 'create': 'Ativar Vitrine', 'settings': 'Configurações' };
+            if(titles[v]) document.getElementById('viewTitle').textContent = titles[v];
+            
+            if(window.innerWidth < 768) {
+                 const sb = document.getElementById('sidebar');
+                 if(sb && !sb.classList.contains('-translate-x-full')) toggleSidebar();
+            }
         };
 
         window.toggleAudioAlert = () => { config.audioAlert = !config.audioAlert; saveConfig(); };
-        window.saveWebhook = () => { config.webhookUrl = document.getElementById('webhookUrl').value; saveConfig(); alert("Webhook guardado!"); };
+        window.saveWebhook = () => { config.webhookUrl = document.getElementById('webhookUrl').value; saveConfig(); alert("Webhook salvo!"); };
         async function saveConfig() { await setDoc(doc(db, "config_superadmin", "notifications"), config); updateAudioUI(); }
         function updateAudioUI() {
             const btn = document.getElementById('btnToggleAudio');
+            if(!btn) return;
             btn.innerHTML = `<i data-lucide="${config.audioAlert ? 'volume-2' : 'volume-x'}" class="w-5 h-5"></i> <span>Som: ${config.audioAlert ? 'Ativado' : 'Mudo'}</span>`;
             btn.className = `mt-8 py-4 px-6 rounded-2xl border flex items-center justify-center gap-3 font-bold text-xs uppercase ${config.audioAlert ? 'bg-indigo-600/20 text-indigo-400 border-indigo-600/30' : 'bg-slate-800 text-slate-500 border-slate-700'}`;
             lucide.createIcons();
@@ -570,4 +659,5 @@
     </script>
 </body>
 </html>
+
 
