@@ -9,21 +9,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
-        
-        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-        
-        /* Table Scroll Fix */
-        .table-container {
-            overflow-x: auto;
-            scrollbar-width: thin;
-            -webkit-overflow-scrolling: touch;
-        }
-
+        .table-container { overflow-x: auto; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
         .modal-blur { backdrop-filter: blur(12px); background: rgba(2, 6, 23, 0.85); }
-        
         .input-premium {
             width: 100%;
             background-color: #1e293b;
@@ -34,18 +24,11 @@
             outline: none;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .input-premium:focus { 
-            border-color: #6366f1; 
-            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
-            background-color: #0f172a;
-        }
-        
+        .input-premium:focus { border-color: #6366f1; box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15); background-color: #0f172a; }
         .btn-hover { transition: all 0.2s ease; }
         .btn-hover:hover { transform: translateY(-1px); filter: brightness(1.1); }
-        
         .animate-pop-in { animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
         @keyframes popIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-        
         #login-screen { background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.2), transparent), #020617; }
     </style>
 </head>
@@ -55,9 +38,7 @@
     <div id="login-screen" class="fixed inset-0 z-[200] flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 p-10 rounded-[3rem] max-w-md w-full shadow-2xl animate-pop-in">
             <div class="flex flex-col items-center text-center mb-10">
-                <div class="bg-indigo-600 p-5 rounded-[2rem] shadow-xl mb-5">
-                    <i data-lucide="shield-check" class="w-12 h-12 text-white"></i>
-                </div>
+                <div class="bg-indigo-600 p-5 rounded-[2rem] shadow-xl mb-5"><i data-lucide="shield-check" class="w-12 h-12 text-white"></i></div>
                 <h1 class="text-3xl font-bold text-white tracking-tight">Super Admin</h1>
                 <p class="text-slate-400 text-sm mt-2">Área Restrita - Acesso Único</p>
             </div>
@@ -119,7 +100,6 @@
                             <input type="text" id="searchInput" oninput="handleSearch(this.value)" placeholder="Filtrar por nome..." class="input-premium pl-12">
                         </div>
                     </div>
-                    
                     <div class="table-container bg-slate-900/50 rounded-[2.5rem] border border-slate-800 shadow-2xl">
                         <table class="w-full text-left text-sm min-w-[900px]">
                             <thead class="bg-slate-900 text-slate-400 text-[10px] uppercase font-black tracking-widest">
@@ -205,12 +185,11 @@
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
     </main>
 
-    <!-- MODAIS REFORMULADOS -->
+    <!-- MODAIS -->
     <div id="plan-modal" class="fixed inset-0 z-[160] modal-blur hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-700 rounded-[3rem] max-w-xl w-full p-8 shadow-2xl relative animate-pop-in flex flex-col max-h-[90vh] overflow-hidden">
             <button onclick="closePlanModal()" class="absolute top-8 right-8 text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
@@ -218,7 +197,7 @@
                 <div class="bg-pink-600/20 p-4 rounded-3xl"><i data-lucide="package" class="w-8 h-8 text-pink-500"></i></div>
                 <div><h2 class="text-2xl font-bold text-white" id="planModalTitle">Configurar Plano</h2><p class="text-xs text-slate-400">Regras de negócio e preços</p></div>
             </div>
-            <form id="planForm" onsubmit="savePlan(event)" class="space-y-5 overflow-y-auto pr-2 custom-scrollbar">
+            <form id="planForm" onsubmit="savePlan(event)" class="space-y-5 overflow-y-auto pr-2">
                 <input type="hidden" id="planId">
                 <input type="text" id="planName" placeholder="Nome do Plano" required class="input-premium">
                 <div class="grid grid-cols-2 gap-4">
@@ -229,10 +208,10 @@
                     <input type="number" id="planMaxBanners" placeholder="Limite Banners" required class="input-premium">
                     <select id="planHasCarousel" class="input-premium bg-slate-800"><option value="true">Com Carrossel</option><option value="false">Sem Carrossel</option></select>
                 </div>
-                <textarea id="planFeatures" class="input-premium min-h-[100px]" placeholder="Benefícios..."></textarea>
+                <textarea id="planFeatures" class="input-premium min-h-[100px]" placeholder="Benefícios (um por linha)..."></textarea>
                 <div class="pt-4 flex gap-3">
                     <button type="button" onclick="closePlanModal()" class="flex-1 py-4 bg-slate-800 text-slate-300 font-bold rounded-2xl">Cancelar</button>
-                    <button type="submit" class="flex-2 bg-pink-600 text-white font-bold py-4 px-10 rounded-2xl shadow-lg btn-hover">Salvar</button>
+                    <button type="submit" class="flex-2 bg-pink-600 text-white font-bold py-4 px-10 rounded-2xl shadow-lg btn-hover">Salvar Plano</button>
                 </div>
             </form>
         </div>
@@ -262,7 +241,6 @@
         import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, onSnapshot, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyAdwsGBTApwOwqr37qCv72gdPRbipsZG0Q", authDomain: "meuestoque-1badc.firebaseapp.com", projectId: "meuestoque-1badc", storageBucket: "meuestoque-1badc.appspot.com", messagingSenderId: "730003067834", appId: "1:730003067834:web:b205f1ea59053345960383" };
-        
         const mainApp = initializeApp(firebaseConfig);
         const auth = getAuth(mainApp);
         const db = getFirestore(mainApp);
@@ -275,98 +253,101 @@
 
         const formatBRL = (v) => Number(v).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
 
-        // --- AUTH E LOGIN ---
+        // AUTH
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnLogin');
-            const errorDiv = document.getElementById('loginError');
-            btn.disabled = true; 
-            btn.innerHTML = '<span class="animate-pulse">Validando Credenciais...</span>';
-            errorDiv.classList.add('hidden');
+            btn.disabled = true; btn.innerHTML = 'Verificando...';
             try {
                 await signInWithEmailAndPassword(auth, document.getElementById('loginEmail').value, document.getElementById('loginPassword').value);
             } catch (err) { 
-                errorDiv.innerText = "Email ou senha incorretos.";
-                errorDiv.classList.remove('hidden');
-                btn.disabled = false; 
-                btn.innerHTML = 'ACEDER AO PAINEL';
+                document.getElementById('loginError').classList.remove('hidden');
+                btn.disabled = false; btn.innerHTML = 'Aceder ao Painel';
             }
         });
 
         onAuthStateChanged(auth, async (user) => {
-            const loginScreen = document.getElementById('login-screen');
-            const btn = document.getElementById('btnLogin');
             if (user) {
-                if(!loginScreen.classList.contains('hidden')) { btn.innerHTML = '<span class="animate-pulse">Verificando...</span>'; btn.disabled = true; }
-                try {
-                    const adminDoc = await getDoc(doc(db, "internal_admins", user.uid));
-                    if (adminDoc.exists()) { 
-                        loginScreen.classList.add('hidden'); 
-                        btn.disabled = false; btn.innerHTML = 'ACEDER AO PAINEL';
-                        if (!listenersInitialized) { setupAllListeners(); listenersInitialized = true; }
-                    } else { throw new Error("Acesso negado."); }
-                } catch (error) {
-                    await signOut(auth);
-                    document.getElementById('loginError').innerText = "Acesso restrito.";
-                    document.getElementById('loginError').classList.remove('hidden');
-                    loginScreen.classList.remove('hidden');
-                    btn.disabled = false; btn.innerHTML = 'ACEDER AO PAINEL';
-                }
-            } else { loginScreen.classList.remove('hidden'); btn.disabled = false; btn.innerHTML = 'ACEDER AO PAINEL'; }
+                const adminDoc = await getDoc(doc(db, "internal_admins", user.uid));
+                if (adminDoc.exists()) {
+                    document.getElementById('login-screen').classList.add('hidden');
+                    if (!listenersInitialized) { setupAllListeners(); listenersInitialized = true; }
+                } else { await signOut(auth); }
+            } else { document.getElementById('login-screen').classList.remove('hidden'); }
             lucide.createIcons();
         });
 
         window.handleSignOut = () => signOut(auth).then(() => window.location.reload());
 
-        // --- LISTENERS ---
+        // LISTENERS
         function setupAllListeners() {
-            onSnapshot(doc(db, "config_superadmin", "notifications"), (d) => {
-                if(d.exists()) { config = d.data(); document.getElementById('webhookUrl').value = config.webhookUrl || ''; updateAudioUI(); }
-            });
+            onSnapshot(doc(db, "config_superadmin", "notifications"), (d) => { if(d.exists()){config=d.data(); document.getElementById('webhookUrl').value=config.webhookUrl||''; updateAudioUI();} });
 
             onSnapshot(collection(db, "config_plans"), (snap) => {
                 availablePlans = snap.docs.map(d => ({id: d.id, ...d.data()}));
-                const grid = document.getElementById('plansGrid');
                 const sSelect = document.getElementById('storePlan');
                 const eSelect = document.getElementById('editPlan');
                 sSelect.innerHTML = '<option value="">Selecione o plano...</option>';
                 eSelect.innerHTML = '';
-                grid.innerHTML = availablePlans.map(p => {
+                document.getElementById('plansGrid').innerHTML = availablePlans.map(p => {
                     sSelect.insertAdjacentHTML('beforeend', `<option value="${p.id}">${p.name}</option>`);
                     eSelect.insertAdjacentHTML('beforeend', `<option value="${p.id}">${p.name}</option>`);
-                    return `<div class="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] shadow-lg flex flex-col h-full">
-                            <h3 class="font-bold text-white text-xl mb-1">${p.name}</h3>
-                            <span class="text-pink-500 text-xs font-black uppercase mb-6">${formatBRL(p.price)}</span>
-                            <div class="flex-1 text-[10px] text-slate-400 leading-relaxed">${(p.features||'').split('\n').map(f => `• ${f}`).join('<br>')}</div>
-                            <div class="flex gap-2 pt-6 border-t border-slate-800 mt-6">
-                                <button onclick='openPlanModal(${JSON.stringify(p)})' class="flex-1 bg-slate-800 py-3 rounded-2xl text-[10px] font-black uppercase">Editar</button>
-                                <button onclick="deletePlan('${p.id}')" class="p-3 text-slate-500 hover:text-red-500 rounded-2xl"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                            </div>
-                        </div>`;
+                    return `<div class="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] flex flex-col h-full shadow-lg">
+                        <h3 class="font-bold text-white text-xl mb-1">${p.name}</h3>
+                        <span class="text-pink-500 text-xs font-black uppercase mb-6">${formatBRL(p.price)}</span>
+                        <div class="flex-1 space-y-2 mb-8">
+                            <p class="text-[10px] text-slate-500 font-bold uppercase"><i data-lucide="package" class="w-3 h-3 inline"></i> ${p.maxProducts} Prods</p>
+                            <div class="text-[10px] text-slate-400 leading-relaxed">${(p.features||'').split('\n').map(f => `• ${f}`).join('<br>')}</div>
+                        </div>
+                        <div class="flex gap-2 pt-6 border-t border-slate-800">
+                            <button onclick='openPlanModal(${JSON.stringify(p)})' class="flex-1 bg-slate-800 text-[10px] font-black uppercase py-3 rounded-2xl">Editar</button>
+                            <button onclick="deletePlan('${p.id}')" class="p-3 text-slate-500 hover:text-red-500 rounded-2xl"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>`;
                 }).join('');
                 lucide.createIcons();
             });
 
-            onSnapshot(collection(db, "stores_registry"), (snap) => {
-                allStores = snap.docs.map(d => d.data());
-                renderStoreTable(allStores);
-            });
+            onSnapshot(collection(db, "stores_registry"), (snap) => { allStores=snap.docs.map(d=>d.data()); renderStoreTable(allStores); });
 
             onSnapshot(collection(db, "registration_requests"), (snap) => {
-                const count = snap.size;
                 const badge = document.getElementById('reqCountBadge');
-                badge.textContent = count;
-                badge.classList.toggle('hidden', count === 0);
-                document.getElementById('emptyRequests').classList.toggle('hidden', count > 0);
-                if(lastRequestCount !== -1 && count > lastRequestCount && config.audioAlert) new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3').play().catch(() => {});
-                lastRequestCount = count;
+                badge.textContent = snap.size; badge.classList.toggle('hidden', snap.size === 0);
+                document.getElementById('emptyRequests').classList.toggle('hidden', snap.size > 0);
+                if(lastRequestCount !== -1 && snap.size > lastRequestCount && config.audioAlert) new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3').play().catch(()=>{});
+                lastRequestCount = snap.size;
+
+                // RESTAURAÇÃO COMPLETA DAS INFORMAÇÕES DA SOLICITAÇÃO
                 document.getElementById('requestsList').innerHTML = snap.docs.map(d => {
                     const r = d.data();
-                    return `<div class="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] shadow-xl">
-                            <h4 class="text-white font-bold text-xl mb-1">${r.storeName}</h4>
-                            <p class="text-slate-400 text-xs mb-4">${r.email}</p>
-                            <button onclick='approveRequest(${JSON.stringify({id: d.id, ...r}).replace(/'/g, "&#39;")})' class="w-full bg-indigo-600 py-3.5 rounded-2xl font-black text-[10px] uppercase">Analisar</button>
-                        </div>`;
+                    const planDetails = availablePlans.find(p => p.id === r.planId) || {name: 'Manual'};
+                    return `<div class="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] shadow-xl hover:border-indigo-500/40 transition-all">
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="text-[10px] font-black uppercase text-indigo-500 tracking-widest">Pendente</span>
+                            <span class="text-[9px] text-slate-600 font-mono">#${d.id.slice(-4).toUpperCase()}</span>
+                        </div>
+                        <h4 class="text-white font-bold text-xl mb-1">${r.storeName}</h4>
+                        <p class="text-slate-400 text-xs mb-4 flex items-center gap-2"><i data-lucide="mail" class="w-3 h-3"></i> ${r.email}</p>
+                        
+                        <div class="space-y-2 py-4 border-y border-slate-800/50 mb-4">
+                            <p class="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2">
+                                <i data-lucide="user" class="w-3.5 h-3.5"></i> Resp: <span class="text-white ml-auto">${r.ownerName || 'N/A'}</span>
+                            </p>
+                            <p class="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2">
+                                <i data-lucide="phone" class="w-3.5 h-3.5"></i> Zap: <span class="text-white ml-auto">${r.phone || 'N/A'}</span>
+                            </p>
+                        </div>
+                        
+                        <div class="p-3 bg-indigo-500/5 border border-indigo-500/20 rounded-xl mb-6">
+                            <p class="text-[9px] font-black text-indigo-400 uppercase mb-1">Plano Escolhido</p>
+                            <p class="text-xs font-bold text-white">${planDetails.name}</p>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button onclick='approveRequest(${JSON.stringify({id: d.id, ...r}).replace(/'/g, "&#39;")})' class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all">Analisar</button>
+                            <button onclick="deleteRequest('${d.id}')" class="p-3.5 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-2xl transition-all"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>`;
                 }).join('');
                 lucide.createIcons();
             });
@@ -388,7 +369,7 @@
             lucide.createIcons();
         }
 
-        // --- AÇÕES DO SISTEMA ---
+        // AÇÕES
         document.getElementById('createStoreForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnSubmitStore');
@@ -401,13 +382,14 @@
             const name = document.getElementById('storeName').value;
             const phone = document.getElementById('storePhone').value;
             const rid = document.getElementById('requestId').value;
+
             const secApp = initializeApp(firebaseConfig, "sec_app_" + Date.now());
             const secAuth = getAuth(secApp);
             try {
                 const cred = await createUserWithEmailAndPassword(secAuth, email, pass);
                 const storeData = { 
                     storeName: name, ownerEmail: email, ownerPhone: phone, 
-                    planId: plan.name, // ALTERAÇÃO CIRÚRGICA: Salva o NOME exato do plano
+                    planId: plan.name, // ALTERAÇÃO CIRÚRGICA 1: Salva o nome exato digitado
                     maxProducts: plan.maxProducts, maxBanners: plan.maxBanners || 3,
                     hasCarousel: plan.hasCarousel || false, status: 'active', subscriptionStatus: 'active',
                     isStoreOpen: true, billingDay: 10 
@@ -423,26 +405,13 @@
             btn.disabled = false; btn.innerHTML = 'Confirmar e Gerar Acesso';
         });
 
-        window.openPlanModal = (p = null) => {
-            document.getElementById('planId').value = p?.id || '';
-            document.getElementById('planName').value = p?.name || '';
-            document.getElementById('planPrice').value = p?.price || '';
-            document.getElementById('planMaxProducts').value = p?.maxProducts || '';
-            document.getElementById('planMaxBanners').value = p?.maxBanners || 3;
-            document.getElementById('planHasCarousel').value = p?.hasCarousel ? 'true' : 'false';
-            document.getElementById('planFeatures').value = p?.features || '';
-            document.getElementById('plan-modal').classList.remove('hidden');
-        };
-        window.closePlanModal = () => document.getElementById('plan-modal').classList.add('hidden');
-
         window.savePlan = async (e) => {
             e.preventDefault();
-            const planNameValue = document.getElementById('planName').value;
-            // ALTERAÇÃO CIRÚRGICA: O ID interno do plano agora reflete o nome para consistência
-            const id = document.getElementById('planId').value || planNameValue.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, '_');
+            const pName = document.getElementById('planName').value;
+            const id = document.getElementById('planId').value || 'plan_' + Date.now();
             try {
                 await setDoc(doc(db, "config_plans", id), {
-                    name: planNameValue,
+                    name: pName, // O nome agora é o que foi digitado
                     price: parseFloat(document.getElementById('planPrice').value),
                     maxProducts: parseInt(document.getElementById('planMaxProducts').value),
                     maxBanners: parseInt(document.getElementById('planMaxBanners').value),
@@ -453,33 +422,20 @@
             } catch(e) { alert("Erro ao salvar: " + e.message); }
         };
 
-        window.openEditModal = (s) => {
-            document.getElementById('editSlug').value = s.slug;
-            document.getElementById('editName').value = s.storeName;
-            document.getElementById('editEmail').value = s.ownerEmail;
-            // Busca o ID do plano pelo nome para selecionar no select
-            const planObj = availablePlans.find(p => p.name === s.planId);
-            document.getElementById('editPlan').value = planObj ? planObj.id : '';
-            document.getElementById('editBillingDay').value = s.billingDay || 10;
-            document.getElementById('edit-modal').classList.remove('hidden');
-        };
-        window.closeEditModal = () => document.getElementById('edit-modal').classList.add('hidden');
-
         window.saveStoreEdit = async (e) => {
             e.preventDefault();
             const slug = document.getElementById('editSlug').value;
-            const planSelectedId = document.getElementById('editPlan').value;
-            const plan = availablePlans.find(p => p.id === planSelectedId);
-            if(!plan) return alert("Selecione um plano válido.");
+            const plan = availablePlans.find(p => p.id === document.getElementById('editPlan').value);
+            if(!plan) return alert("Selecione um plano.");
 
-            // ALTERAÇÃO CIRÚRGICA: Agora atualiza todos os campos de limites baseados no plano escolhido
+            // ALTERAÇÃO CIRÚRGICA 2: Corrige a falha de atualização da loja (sincroniza limites e nome)
             const data = { 
                 storeName: document.getElementById('editName').value, 
                 ownerEmail: document.getElementById('editEmail').value, 
-                planId: plan.name, // Sincroniza o Nome exato
+                planId: plan.name, // Sincroniza o nome exato
                 maxProducts: plan.maxProducts, 
-                maxBanners: plan.maxBanners, // Atualiza limite de banners
-                hasCarousel: plan.hasCarousel, // Atualiza suporte a carrossel
+                maxBanners: plan.maxBanners, 
+                hasCarousel: plan.hasCarousel,
                 billingDay: parseInt(document.getElementById('editBillingDay').value) 
             };
             try {
@@ -488,15 +444,6 @@
                 alert("Loja atualizada com sucesso!");
                 closeEditModal();
             } catch(err) { alert("Erro ao atualizar: " + err.message); }
-        };
-
-        window.publishPlansForRegistration = async () => {
-            if(!confirm("Publicar para o site?")) return;
-            const pubRef = collection(db, "public_plans");
-            const snap = await getDocs(pubRef);
-            await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
-            await Promise.all(availablePlans.map(p => setDoc(doc(pubRef, p.id), {...p, isActive: true, publishedAt: serverTimestamp()})));
-            alert("Publicado!");
         };
 
         window.approveRequest = (r) => {
@@ -511,17 +458,51 @@
             switchView('create');
         };
 
-        window.deleteRequest = async (id) => { if(confirm("Apagar?")) await deleteDoc(doc(db, "registration_requests", id)); };
+        // EXCLUSÃO RESTAURADA
+        window.deleteRequest = async (id) => { if(confirm("Apagar solicitação permanentemente?")) await deleteDoc(doc(db, "registration_requests", id)); };
+        
+        window.openPlanModal = (p = null) => {
+            document.getElementById('planId').value = p?.id || '';
+            document.getElementById('planName').value = p?.name || '';
+            document.getElementById('planPrice').value = p?.price || '';
+            document.getElementById('planMaxProducts').value = p?.maxProducts || '';
+            document.getElementById('planMaxBanners').value = p?.maxBanners || 3;
+            document.getElementById('planHasCarousel').value = p?.hasCarousel ? 'true' : 'false';
+            document.getElementById('planFeatures').value = p?.features || '';
+            document.getElementById('plan-modal').classList.remove('hidden');
+        };
+        window.closePlanModal = () => document.getElementById('plan-modal').classList.add('hidden');
+        window.openEditModal = (s) => {
+            document.getElementById('editSlug').value = s.slug;
+            document.getElementById('editName').value = s.storeName;
+            document.getElementById('editEmail').value = s.ownerEmail;
+            const p = availablePlans.find(p => p.name === s.planId);
+            document.getElementById('editPlan').value = p ? p.id : '';
+            document.getElementById('editBillingDay').value = s.billingDay || 10;
+            document.getElementById('edit-modal').classList.remove('hidden');
+        };
+        window.closeEditModal = () => document.getElementById('edit-modal').classList.add('hidden');
+        window.publishPlansForRegistration = async () => {
+            if(!confirm("Atualizar site público?")) return;
+            const pubRef = collection(db, "public_plans");
+            const snap = await getDocs(pubRef);
+            await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
+            await Promise.all(availablePlans.map(p => setDoc(doc(pubRef, p.id), {...p, isActive: true, publishedAt: serverTimestamp()})));
+            alert("Publicado!");
+        };
+        window.handleSearch = (v) => {
+            const term = v.toLowerCase();
+            const filtered = allStores.filter(s => s.storeName.toLowerCase().includes(term) || s.slug.toLowerCase().includes(term));
+            renderStoreTable(filtered);
+        };
         window.toggleSuspend = async (slug, curr) => {
             const next = curr === 'active' ? 'suspended' : 'active';
-            if(!confirm(`Alterar para ${next}?`)) return;
+            if(!confirm(`Mudar status para ${next}?`)) return;
             await updateDoc(doc(db, "stores_registry", slug), { status: next });
             await updateDoc(doc(db, "stores", slug, "config", "store"), { subscriptionStatus: next });
         };
         window.deleteStore = async (s) => { if(confirm("Apagar registro?")) await deleteDoc(doc(db, "stores_registry", s)); };
         window.deletePlan = async (id) => { if(confirm("Apagar plano?")) await deleteDoc(doc(db, "config_plans", id)); };
-
-        // NAVEGAÇÃO
         window.switchView = (v) => {
             ['list', 'requests', 'plans', 'create', 'result-view', 'settings'].forEach(x => {
                 if(document.getElementById(`view-${x}`)) document.getElementById(`view-${x}`).classList.add('hidden');
@@ -531,13 +512,11 @@
             if(document.getElementById(`nav-${v}`)) document.getElementById(`nav-${v}`).classList.add('bg-indigo-600/10', 'text-indigo-400', 'border-indigo-600/50');
             if(window.innerWidth < 768) toggleSidebar();
         };
-
         window.toggleAudioAlert = () => { config.audioAlert = !config.audioAlert; saveConfig(); };
         window.saveWebhook = () => { config.webhookUrl = document.getElementById('webhookUrl').value; saveConfig(); };
         async function saveConfig() { await setDoc(doc(db, "config_superadmin", "notifications"), config); updateAudioUI(); }
         function updateAudioUI() {
-            const btn = document.getElementById('btnToggleAudio');
-            if(!btn) return;
+            const btn = document.getElementById('btnToggleAudio'); if(!btn) return;
             btn.innerHTML = `<i data-lucide="${config.audioAlert ? 'volume-2' : 'volume-x'}" class="w-5 h-5"></i> <span>Som: ${config.audioAlert ? 'Ativado' : 'Mudo'}</span>`;
             btn.className = `mt-8 py-4 px-6 rounded-2xl border flex items-center justify-center gap-3 font-bold text-xs uppercase ${config.audioAlert ? 'bg-indigo-600/20 text-indigo-400 border-indigo-600/30' : 'bg-slate-800 text-slate-500 border-slate-700'}`;
             lucide.createIcons();
