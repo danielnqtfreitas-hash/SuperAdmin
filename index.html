@@ -271,29 +271,21 @@
         let allStores = [];
         let config = { audioAlert: true, webhookUrl: '' };
         let lastRequestCount = -1;
-        let listenersInitialized = false; // Controle para evitar duplicação de listeners
+        let listenersInitialized = false;
 
         const formatBRL = (v) => Number(v).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
 
-        // --- AUTH E LOGIN (Lógica Corrigida) ---
-
-        // 1. O formulário apenas faz o pedido de login, não manipula a tela
+        // --- AUTH E LOGIN ---
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnLogin');
             const errorDiv = document.getElementById('loginError');
-            
-            // UI Loading
             btn.disabled = true; 
             btn.innerHTML = '<span class="animate-pulse">Validando Credenciais...</span>';
             errorDiv.classList.add('hidden');
-
             try {
-                // Apenas faz o login. O redirecionamento acontece no onAuthStateChanged abaixo
                 await signInWithEmailAndPassword(auth, document.getElementById('loginEmail').value, document.getElementById('loginPassword').value);
-                // Não fazemos nada aqui, o listener vai pegar a mudança de estado
             } catch (err) { 
-                console.error("Erro ao logar:", err);
                 errorDiv.innerText = "Email ou senha incorretos.";
                 errorDiv.classList.remove('hidden');
                 btn.disabled = false; 
@@ -301,190 +293,106 @@
             }
         });
 
-        // 2. O Observador é a ÚNICA fonte de verdade para mostrar/esconder telas
         onAuthStateChanged(auth, async (user) => {
             const loginScreen = document.getElementById('login-screen');
             const btn = document.getElementById('btnLogin');
-
             if (user) {
-                // Usuário detectado (Login novo ou Refresh da página)
-                // Se estiver na tela de login, mostramos feedback visual que estamos checando permissão
-                if(!loginScreen.classList.contains('hidden')) {
-                     btn.innerHTML = '<span class="animate-pulse">Verificando Permissões...</span>';
-                     btn.disabled = true;
-                }
-
+                if(!loginScreen.classList.contains('hidden')) { btn.innerHTML = '<span class="animate-pulse">Verificando...</span>'; btn.disabled = true; }
                 try {
                     const adminDoc = await getDoc(doc(db, "internal_admins", user.uid));
-                    
                     if (adminDoc.exists()) { 
-                        // SUCESSO: É admin e está logado
                         loginScreen.classList.add('hidden'); 
-                        
-                        // Reseta botão de login para o futuro
-                        btn.disabled = false;
-                        btn.innerHTML = 'ACEDER AO PAINEL';
-
-                        if (!listenersInitialized) {
-                            setupAllListeners();
-                            listenersInitialized = true;
-                        }
-                    } else { 
-                        // FALHA: Logado no Firebase, mas não é Admin no Firestore
-                        throw new Error("Permissão negada: Não é admin.");
-                    }
+                        btn.disabled = false; btn.innerHTML = 'ACEDER AO PAINEL';
+                        if (!listenersInitialized) { setupAllListeners(); listenersInitialized = true; }
+                    } else { throw new Error("Acesso negado."); }
                 } catch (error) {
-                    console.error("Falha na verificação:", error);
-                    await signOut(auth); // Desloga forçado
-                    document.getElementById('loginError').innerText = "Acesso restrito a Super Admins.";
+                    await signOut(auth);
+                    document.getElementById('loginError').innerText = "Acesso restrito.";
                     document.getElementById('loginError').classList.remove('hidden');
                     loginScreen.classList.remove('hidden');
-                    btn.disabled = false;
-                    btn.innerHTML = 'ACEDER AO PAINEL';
+                    btn.disabled = false; btn.innerHTML = 'ACEDER AO PAINEL';
                 }
-            } else { 
-                // Ninguém logado
-                loginScreen.classList.remove('hidden'); 
-                btn.disabled = false;
-                btn.innerHTML = 'ACEDER AO PAINEL';
-            }
+            } else { loginScreen.classList.remove('hidden'); btn.disabled = false; btn.innerHTML = 'ACEDER AO PAINEL'; }
             lucide.createIcons();
         });
 
         window.handleSignOut = () => signOut(auth).then(() => window.location.reload());
 
-        // --- LISTENERS DO SISTEMA ---
+        // --- LISTENERS ---
         function setupAllListeners() {
-            // Configurações
             onSnapshot(doc(db, "config_superadmin", "notifications"), (d) => {
                 if(d.exists()) { config = d.data(); document.getElementById('webhookUrl').value = config.webhookUrl || ''; updateAudioUI(); }
             });
 
-            // Planos
             onSnapshot(collection(db, "config_plans"), (snap) => {
                 availablePlans = snap.docs.map(d => ({id: d.id, ...d.data()}));
                 const grid = document.getElementById('plansGrid');
                 const sSelect = document.getElementById('storePlan');
                 const eSelect = document.getElementById('editPlan');
-                
-                // Limpa selects antes de repopular para evitar duplicatas
                 sSelect.innerHTML = '<option value="">Selecione o plano...</option>';
                 eSelect.innerHTML = '';
-                
-                const plansHTML = availablePlans.map(p => {
+                grid.innerHTML = availablePlans.map(p => {
                     sSelect.insertAdjacentHTML('beforeend', `<option value="${p.id}">${p.name}</option>`);
                     eSelect.insertAdjacentHTML('beforeend', `<option value="${p.id}">${p.name}</option>`);
-                    return `
-                        <div class="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] flex flex-col h-full shadow-lg">
+                    return `<div class="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] shadow-lg flex flex-col h-full">
                             <h3 class="font-bold text-white text-xl mb-1">${p.name}</h3>
                             <span class="text-pink-500 text-xs font-black uppercase mb-6">${formatBRL(p.price)}</span>
-                            <div class="flex-1 space-y-2 mb-8">
-                                <p class="text-[10px] text-slate-500 font-bold uppercase"><i data-lucide="package" class="w-3 h-3 inline"></i> ${p.maxProducts} Prods</p>
-                                <div class="h-px bg-slate-800 my-4"></div>
-                                <div class="text-[10px] text-slate-400 leading-relaxed">${(p.features||'').split('\n').map(f => `• ${f}`).join('<br>')}</div>
-                            </div>
-                            <div class="flex gap-2 pt-6 border-t border-slate-800">
-                                <button onclick='openPlanModal(${JSON.stringify(p)})' class="flex-1 bg-slate-800 text-[10px] font-black uppercase py-3 rounded-2xl">Editar</button>
+                            <div class="flex-1 text-[10px] text-slate-400 leading-relaxed">${(p.features||'').split('\n').map(f => `• ${f}`).join('<br>')}</div>
+                            <div class="flex gap-2 pt-6 border-t border-slate-800 mt-6">
+                                <button onclick='openPlanModal(${JSON.stringify(p)})' class="flex-1 bg-slate-800 py-3 rounded-2xl text-[10px] font-black uppercase">Editar</button>
                                 <button onclick="deletePlan('${p.id}')" class="p-3 text-slate-500 hover:text-red-500 rounded-2xl"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                             </div>
-                        </div>
-                    `;
+                        </div>`;
                 }).join('');
-                
-                grid.innerHTML = plansHTML;
                 lucide.createIcons();
             });
 
-            // Lojas
             onSnapshot(collection(db, "stores_registry"), (snap) => {
                 allStores = snap.docs.map(d => d.data());
                 renderStoreTable(allStores);
             });
 
-            // Solicitações
             onSnapshot(collection(db, "registration_requests"), (snap) => {
                 const count = snap.size;
                 const badge = document.getElementById('reqCountBadge');
-                
                 badge.textContent = count;
                 badge.classList.toggle('hidden', count === 0);
                 document.getElementById('emptyRequests').classList.toggle('hidden', count > 0);
-
-                if(lastRequestCount !== -1 && count > lastRequestCount) {
-                    if(config.audioAlert) new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3').play().catch(e => console.log("Audio play blocked"));
-                }
+                if(lastRequestCount !== -1 && count > lastRequestCount && config.audioAlert) new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3').play().catch(() => {});
                 lastRequestCount = count;
-
                 document.getElementById('requestsList').innerHTML = snap.docs.map(d => {
                     const r = d.data();
-                    const rJson = JSON.stringify({id: d.id, ...r}).replace(/'/g, "&#39;");
-                    const planDetails = r.planId ? availablePlans.find(p => p.id === r.planId) : null;
-                    const planBox = r.planId ? `
-                        <div class="mt-4 p-3 bg-indigo-500/5 border border-indigo-500/20 rounded-xl">
-                            <div class="flex justify-between items-center text-[10px] font-bold mb-1">
-                                <span class="text-indigo-400">PLANO ESCOLHIDO</span>
-                                <span class="text-white">${planDetails ? planDetails.name : (r.planName || 'Manual')}</span>
-                            </div>
-                            <div class="text-[10px] text-slate-500">
-                                ${planDetails ? `${formatBRL(planDetails.price)} • Até ${planDetails.maxProducts} Produtos` : 'Detalhes indisponíveis'}
-                            </div>
-                        </div>
-                    ` : '';
-
-                    return `
-                        <div class="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] shadow-xl hover:border-indigo-500/40 transition-all group">
-                            <div class="flex justify-between items-start mb-2">
-                                <span class="text-[10px] font-black uppercase text-indigo-500 tracking-widest">Nova Candidatura</span>
-                                <span class="text-[9px] text-slate-600 font-mono">ID: ${d.id.slice(-6).toUpperCase()}</span>
-                            </div>
+                    return `<div class="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] shadow-xl">
                             <h4 class="text-white font-bold text-xl mb-1">${r.storeName}</h4>
-                            <p class="text-slate-400 text-xs mb-4 flex items-center gap-2"><i data-lucide="mail" class="w-3 h-3"></i> ${r.email}</p>
-                            <div class="space-y-2 py-4 border-y border-slate-800/50">
-                                <p class="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2"><i data-lucide="user" class="w-3.5 h-3.5"></i> Resp: <span class="text-white ml-auto">${r.ownerName || 'N/A'}</span></p>
-                                <p class="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2"><i data-lucide="phone" class="w-3.5 h-3.5"></i> Zap: <span class="text-white ml-auto">${r.phone || 'N/A'}</span></p>
-                            </div>
-                            ${planBox}
-                            <div class="mt-6 flex gap-2">
-                                <button onclick='approveRequest(${rJson})' class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all">Analisar</button>
-                                <button onclick="deleteRequest('${d.id}')" class="p-3.5 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-2xl transition-all"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                            </div>
-                        </div>
-                    `;
+                            <p class="text-slate-400 text-xs mb-4">${r.email}</p>
+                            <button onclick='approveRequest(${JSON.stringify({id: d.id, ...r}).replace(/'/g, "&#39;")})' class="w-full bg-indigo-600 py-3.5 rounded-2xl font-black text-[10px] uppercase">Analisar</button>
+                        </div>`;
                 }).join('');
                 lucide.createIcons();
             });
         }
 
         function renderStoreTable(list) {
-            const tbody = document.getElementById('storesTableBody');
-            if(!tbody) return;
-            tbody.innerHTML = list.map(s => {
-                const plan = availablePlans.find(p => p.id === s.planId)?.name || 'N/A';
-                return `
-                    <tr class="border-b border-slate-800/50 hover:bg-slate-900/40">
-                        <td class="px-8 py-6 font-bold text-white">${s.storeName} <br><span class="text-[9px] text-slate-500 font-mono">${s.slug}</span></td>
-                        <td class="px-8 py-6"><span class="bg-indigo-500/10 text-indigo-400 text-[9px] font-black px-2 py-0.5 rounded border border-indigo-500/20 uppercase">${plan}</span></td>
-                        <td class="px-8 py-6 text-slate-400 text-xs">${s.ownerEmail}</td>
-                        <td class="px-8 py-6"><span class="text-[10px] font-bold uppercase ${s.status === 'active' ? 'text-green-400' : 'text-red-400'}">${s.status}</span></td>
-                        <td class="px-8 py-6 text-right flex gap-3 justify-end">
-                            <button onclick='openEditModal(${JSON.stringify(s)})' class="p-2.5 text-indigo-400 hover:bg-indigo-900/30 rounded-xl"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
-                            <button onclick="toggleSuspend('${s.slug}', '${s.status}')" class="p-2.5 text-slate-500 hover:text-white rounded-xl"><i data-lucide="power" class="w-4 h-4"></i></button>
-                            <button onclick="deleteStore('${s.slug}')" class="p-2.5 text-slate-600 hover:text-red-500 rounded-xl"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
+            document.getElementById('storesTableBody').innerHTML = list.map(s => `
+                <tr class="border-b border-slate-800/50 hover:bg-slate-900/40">
+                    <td class="px-8 py-6 font-bold text-white">${s.storeName} <br><span class="text-[9px] text-slate-500 font-mono">${s.slug}</span></td>
+                    <td class="px-8 py-6"><span class="bg-indigo-500/10 text-indigo-400 text-[9px] font-black px-2 py-0.5 rounded border border-indigo-500/20 uppercase">${s.planId || 'N/A'}</span></td>
+                    <td class="px-8 py-6 text-slate-400 text-xs">${s.ownerEmail}</td>
+                    <td class="px-8 py-6 text-[10px] font-bold uppercase ${s.status === 'active' ? 'text-green-400' : 'text-red-400'}">${s.status}</td>
+                    <td class="px-8 py-6 text-right flex gap-3 justify-end">
+                        <button onclick='openEditModal(${JSON.stringify(s)})' class="p-2.5 text-indigo-400 hover:bg-indigo-900/30 rounded-xl"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                        <button onclick="toggleSuspend('${s.slug}', '${s.status}')" class="p-2.5 text-slate-500 hover:text-white rounded-xl"><i data-lucide="power" class="w-4 h-4"></i></button>
+                        <button onclick="deleteStore('${s.slug}')" class="p-2.5 text-slate-600 hover:text-red-500 rounded-xl"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </td>
+                </tr>`).join('');
             lucide.createIcons();
         }
 
-        // --- AÇÕES DO SISTEMA (Mantidas iguais, apenas garantindo escopo global) ---
-        
-        // Criar Loja
+        // --- AÇÕES DO SISTEMA ---
         document.getElementById('createStoreForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnSubmitStore');
             btn.disabled = true; btn.innerHTML = 'Ativando...';
-            
             const pId = document.getElementById('storePlan').value;
             const plan = availablePlans.find(p => p.id === pId);
             const slug = document.getElementById('storeSlug').value;
@@ -493,48 +401,27 @@
             const name = document.getElementById('storeName').value;
             const phone = document.getElementById('storePhone').value;
             const rid = document.getElementById('requestId').value;
-
-            // Instância Secundária para não deslogar o Admin
             const secApp = initializeApp(firebaseConfig, "sec_app_" + Date.now());
             const secAuth = getAuth(secApp);
-
             try {
                 const cred = await createUserWithEmailAndPassword(secAuth, email, pass);
                 const storeData = { 
                     storeName: name, ownerEmail: email, ownerPhone: phone, 
-                    planId: pId, maxProducts: plan.maxProducts, maxBanners: plan.maxBanners || 3,
+                    planId: plan.name, // ALTERAÇÃO CIRÚRGICA: Salva o NOME exato do plano
+                    maxProducts: plan.maxProducts, maxBanners: plan.maxBanners || 3,
                     hasCarousel: plan.hasCarousel || false, status: 'active', subscriptionStatus: 'active',
                     isStoreOpen: true, billingDay: 10 
                 };
-
                 await setDoc(doc(db, "stores", slug, "config", "store"), storeData);
                 await setDoc(doc(db, "admin_directory", cred.user.uid), { storeId: slug, role: 'owner' });
                 await setDoc(doc(db, "stores_registry", slug), { ...storeData, slug });
-                
                 if(rid) await deleteDoc(doc(db, "registration_requests", rid));
-
-                document.getElementById('resEmail').innerText = email;
-                document.getElementById('resPass').innerText = pass;
-                document.getElementById('btnWhatsAppNotify').onclick = () => {
-                    const msg = `🚀 *Sua vitrine está ativa!*\n\nLoja: ${name}\nAcesso: painel.shopwave.com\nLogin: ${email}\nSenha: ${pass}`;
-                    window.open(`https://wa.me/${phone.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`,'_blank');
-                };
-
-                await signOut(secAuth); await deleteApp(secApp);
-                switchView('result-view');
-            } catch (err) { 
-                alert("Erro ao criar loja: " + err.message); 
-                await deleteApp(secApp); 
-            }
+                document.getElementById('resEmail').innerText = email; document.getElementById('resPass').innerText = pass;
+                document.getElementById('btnWhatsAppNotify').onclick = () => window.open(`https://wa.me/${phone.replace(/\D/g,'')}?text=${encodeURIComponent(`🚀 *Sua vitrine está ativa!*\nLoja: ${name}\nLogin: ${email}\nSenha: ${pass}`)}`,'_blank');
+                await signOut(secAuth); await deleteApp(secApp); switchView('result-view');
+            } catch (err) { alert("Erro: " + err.message); await deleteApp(secApp); }
             btn.disabled = false; btn.innerHTML = 'Confirmar e Gerar Acesso';
         });
-
-        // Helpers e Globais
-        window.handleSearch = (v) => {
-            const term = v.toLowerCase();
-            const filtered = allStores.filter(s => s.storeName.toLowerCase().includes(term) || s.slug.toLowerCase().includes(term));
-            renderStoreTable(filtered);
-        };
 
         window.openPlanModal = (p = null) => {
             document.getElementById('planId').value = p?.id || '';
@@ -550,10 +437,12 @@
 
         window.savePlan = async (e) => {
             e.preventDefault();
-            const id = document.getElementById('planId').value || 'plan_' + Date.now();
+            const planNameValue = document.getElementById('planName').value;
+            // ALTERAÇÃO CIRÚRGICA: O ID interno do plano agora reflete o nome para consistência
+            const id = document.getElementById('planId').value || planNameValue.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, '_');
             try {
                 await setDoc(doc(db, "config_plans", id), {
-                    name: document.getElementById('planName').value,
+                    name: planNameValue,
                     price: parseFloat(document.getElementById('planPrice').value),
                     maxProducts: parseInt(document.getElementById('planMaxProducts').value),
                     maxBanners: parseInt(document.getElementById('planMaxBanners').value),
@@ -561,14 +450,16 @@
                     features: document.getElementById('planFeatures').value
                 });
                 closePlanModal();
-            } catch(e) { alert("Erro ao salvar plano: " + e.message); }
+            } catch(e) { alert("Erro ao salvar: " + e.message); }
         };
 
         window.openEditModal = (s) => {
             document.getElementById('editSlug').value = s.slug;
             document.getElementById('editName').value = s.storeName;
             document.getElementById('editEmail').value = s.ownerEmail;
-            document.getElementById('editPlan').value = s.planId || '';
+            // Busca o ID do plano pelo nome para selecionar no select
+            const planObj = availablePlans.find(p => p.name === s.planId);
+            document.getElementById('editPlan').value = planObj ? planObj.id : '';
             document.getElementById('editBillingDay').value = s.billingDay || 10;
             document.getElementById('edit-modal').classList.remove('hidden');
         };
@@ -577,20 +468,35 @@
         window.saveStoreEdit = async (e) => {
             e.preventDefault();
             const slug = document.getElementById('editSlug').value;
-            const plan = availablePlans.find(p => p.id === document.getElementById('editPlan').value);
-            const data = { storeName: document.getElementById('editName').value, ownerEmail: document.getElementById('editEmail').value, planId: plan.id, maxProducts: plan.maxProducts, billingDay: document.getElementById('editBillingDay').value };
-            await updateDoc(doc(db, "stores_registry", slug), data);
-            await updateDoc(doc(db, "stores", slug, "config", "store"), data);
-            closeEditModal();
+            const planSelectedId = document.getElementById('editPlan').value;
+            const plan = availablePlans.find(p => p.id === planSelectedId);
+            if(!plan) return alert("Selecione um plano válido.");
+
+            // ALTERAÇÃO CIRÚRGICA: Agora atualiza todos os campos de limites baseados no plano escolhido
+            const data = { 
+                storeName: document.getElementById('editName').value, 
+                ownerEmail: document.getElementById('editEmail').value, 
+                planId: plan.name, // Sincroniza o Nome exato
+                maxProducts: plan.maxProducts, 
+                maxBanners: plan.maxBanners, // Atualiza limite de banners
+                hasCarousel: plan.hasCarousel, // Atualiza suporte a carrossel
+                billingDay: parseInt(document.getElementById('editBillingDay').value) 
+            };
+            try {
+                await updateDoc(doc(db, "stores_registry", slug), data);
+                await updateDoc(doc(db, "stores", slug, "config", "store"), data);
+                alert("Loja atualizada com sucesso!");
+                closeEditModal();
+            } catch(err) { alert("Erro ao atualizar: " + err.message); }
         };
 
         window.publishPlansForRegistration = async () => {
-            if(!confirm("Isso atualizará os planos visíveis no formulário público. Continuar?")) return;
+            if(!confirm("Publicar para o site?")) return;
             const pubRef = collection(db, "public_plans");
             const snap = await getDocs(pubRef);
             await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
             await Promise.all(availablePlans.map(p => setDoc(doc(pubRef, p.id), {...p, isActive: true, publishedAt: serverTimestamp()})));
-            alert("Planos públicos atualizados com sucesso!");
+            alert("Publicado!");
         };
 
         window.approveRequest = (r) => {
@@ -600,52 +506,34 @@
             document.getElementById('storeSlug').value = (r.storeName || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, '-');
             document.getElementById('adminPass').value = Math.random().toString(36).slice(-8);
             document.getElementById('storePhone').value = r.phone || '';
-            if(r.planId) document.getElementById('storePlan').value = r.planId;
+            const matchedPlan = availablePlans.find(p => p.id === r.planId || p.name === r.planId);
+            if(matchedPlan) document.getElementById('storePlan').value = matchedPlan.id;
             switchView('create');
         };
 
-        window.deleteRequest = async (id) => { if(confirm("Remover esta solicitação permanentemente?")) await deleteDoc(doc(db, "registration_requests", id)); };
-        
+        window.deleteRequest = async (id) => { if(confirm("Apagar?")) await deleteDoc(doc(db, "registration_requests", id)); };
         window.toggleSuspend = async (slug, curr) => {
             const next = curr === 'active' ? 'suspended' : 'active';
-            if(!confirm(`Deseja alterar o status da loja para: ${next.toUpperCase()}?`)) return;
+            if(!confirm(`Alterar para ${next}?`)) return;
             await updateDoc(doc(db, "stores_registry", slug), { status: next });
             await updateDoc(doc(db, "stores", slug, "config", "store"), { subscriptionStatus: next });
         };
-        
-        window.deleteStore = async (s) => { 
-            if(confirm("ATENÇÃO: Isso apagará o registro da loja. Os dados internos (coleções de produtos) não serão apagados automaticamente. Continuar?")) 
-            await deleteDoc(doc(db, "stores_registry", s)); 
-        };
-        
-        window.deletePlan = async (id) => { if(confirm("Apagar este plano?")) await deleteDoc(doc(db, "config_plans", id)); };
+        window.deleteStore = async (s) => { if(confirm("Apagar registro?")) await deleteDoc(doc(db, "stores_registry", s)); };
+        window.deletePlan = async (id) => { if(confirm("Apagar plano?")) await deleteDoc(doc(db, "config_plans", id)); };
 
-        // NAVIGATION
+        // NAVEGAÇÃO
         window.switchView = (v) => {
             ['list', 'requests', 'plans', 'create', 'result-view', 'settings'].forEach(x => {
-                const el = document.getElementById(`view-${x}`);
-                const nav = document.getElementById(`nav-${x}`);
-                if(el) el.classList.add('hidden');
-                if(nav) nav.classList.remove('bg-indigo-600/10', 'text-indigo-400', 'border-indigo-600/50');
+                if(document.getElementById(`view-${x}`)) document.getElementById(`view-${x}`).classList.add('hidden');
+                if(document.getElementById(`nav-${x}`)) document.getElementById(`nav-${x}`).classList.remove('bg-indigo-600/10', 'text-indigo-400', 'border-indigo-600/50');
             });
-            
-            const target = document.getElementById(`view-${v}`);
-            if(target) target.classList.remove('hidden');
-            
-            const navTarget = document.getElementById(`nav-${v}`);
-            if(navTarget) navTarget.classList.add('bg-indigo-600/10', 'text-indigo-400', 'border-indigo-600/50');
-            
-            const titles = { 'list': 'Gestão de Lojas', 'requests': 'Solicitações Pendentes', 'plans': 'Catálogo de Planos', 'create': 'Ativar Vitrine', 'settings': 'Configurações' };
-            if(titles[v]) document.getElementById('viewTitle').textContent = titles[v];
-            
-            if(window.innerWidth < 768) {
-                 const sb = document.getElementById('sidebar');
-                 if(sb && !sb.classList.contains('-translate-x-full')) toggleSidebar();
-            }
+            if(document.getElementById(`view-${v}`)) document.getElementById(`view-${v}`).classList.remove('hidden');
+            if(document.getElementById(`nav-${v}`)) document.getElementById(`nav-${v}`).classList.add('bg-indigo-600/10', 'text-indigo-400', 'border-indigo-600/50');
+            if(window.innerWidth < 768) toggleSidebar();
         };
 
         window.toggleAudioAlert = () => { config.audioAlert = !config.audioAlert; saveConfig(); };
-        window.saveWebhook = () => { config.webhookUrl = document.getElementById('webhookUrl').value; saveConfig(); alert("Webhook salvo!"); };
+        window.saveWebhook = () => { config.webhookUrl = document.getElementById('webhookUrl').value; saveConfig(); };
         async function saveConfig() { await setDoc(doc(db, "config_superadmin", "notifications"), config); updateAudioUI(); }
         function updateAudioUI() {
             const btn = document.getElementById('btnToggleAudio');
@@ -654,7 +542,6 @@
             btn.className = `mt-8 py-4 px-6 rounded-2xl border flex items-center justify-center gap-3 font-bold text-xs uppercase ${config.audioAlert ? 'bg-indigo-600/20 text-indigo-400 border-indigo-600/30' : 'bg-slate-800 text-slate-500 border-slate-700'}`;
             lucide.createIcons();
         }
-
         window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('-translate-x-full');
     </script>
 </body>
