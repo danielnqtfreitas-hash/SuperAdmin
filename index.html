@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-PT">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Super Admin | Marketplace Manager</title>
+    <title>Super Admin | Marketplace Manager Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -30,6 +30,15 @@
         .animate-pop-in { animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
         @keyframes popIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
         #login-screen { background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.2), transparent), #020617; }
+        
+        /* Sorting UI */
+        .sort-btn { @apply px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-slate-800; }
+        .sort-btn.active { @apply bg-indigo-600 text-white border-indigo-500 shadow-lg shadow-indigo-600/20; }
+        .sort-btn:not(.active) { @apply bg-slate-900 text-slate-500 hover:text-slate-300 hover:bg-slate-800; }
+
+        .group-header { background: linear-gradient(90deg, #1e293b 0%, transparent 100%); }
+        .chevron-rotate { transition: transform 0.3s ease; }
+        .chevron-active { transform: rotate(90deg); }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 h-screen flex overflow-hidden w-full">
@@ -84,7 +93,7 @@
             </div>
             <div class="hidden md:flex items-center gap-2 px-4 py-2 bg-indigo-600/10 border border-indigo-600/30 rounded-full">
                 <span class="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></span>
-                <span class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Sincronizado</span>
+                <span id="syncStatus" class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Sincronizado</span>
             </div>
         </header>
 
@@ -93,26 +102,49 @@
                 
                 <!-- VIEW: LISTA -->
                 <div id="view-list" class="animate-fade-in space-y-8">
-                    <div class="flex flex-col sm:flex-row justify-between items-end sm:items-center gap-6">
-                        <div><h3 class="text-2xl font-bold text-white">Unidades Ativas</h3><p class="text-sm text-slate-500">Controle administrativo total</p></div>
-                        <div class="relative w-full sm:w-80">
-                            <i data-lucide="search" class="absolute left-4 top-3.5 w-5 h-5 text-slate-500"></i>
-                            <input type="text" id="searchInput" oninput="handleSearch(this.value)" placeholder="Filtrar por nome..." class="input-premium pl-12">
+                    
+                    <div class="bg-slate-900/30 border border-slate-800/50 p-6 rounded-[2.5rem] space-y-6">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                            <div>
+                                <h3 class="text-xl font-bold text-white">Filtros Inteligentes</h3>
+                                <p class="text-[10px] text-slate-500 uppercase tracking-widest font-black mt-1">Navegação avançada de dados</p>
+                            </div>
+                            <div class="flex items-center gap-3 bg-slate-950/50 p-1.5 rounded-2xl border border-slate-800">
+                                <button onclick="toggleGrouping()" id="btnGroup" class="flex items-center gap-2 px-4 py-2 text-[10px] font-bold uppercase tracking-tighter text-slate-400 hover:text-white transition-all">
+                                    <i data-lucide="layers" class="w-4 h-4"></i> Agrupar por Plano
+                                </button>
+                                <div class="w-px h-6 bg-slate-800"></div>
+                                <div class="relative w-48 sm:w-64">
+                                    <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-slate-500"></i>
+                                    <input type="text" id="searchInput" oninput="handleSearch(this.value)" placeholder="Pesquisar loja..." class="w-full bg-transparent text-xs text-white pl-9 pr-4 py-2 outline-none">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap gap-2 pt-2">
+                            <button onclick="setSort('name')" id="sort-name" class="sort-btn active">Nome</button>
+                            <button onclick="setSort('date')" id="sort-date" class="sort-btn">Data Criação</button>
+                            <button onclick="setSort('day')" id="sort-day" class="sort-btn">Vistas Hoje</button>
+                            <button onclick="setSort('week')" id="sort-week" class="sort-btn">Semana</button>
+                            <button onclick="setSort('month')" id="sort-month" class="sort-btn">Mês</button>
+                            <button onclick="setSort('total')" id="sort-total" class="sort-btn">Geral</button>
                         </div>
                     </div>
+
                     <div class="table-container bg-slate-900/50 rounded-[2.5rem] border border-slate-800 shadow-2xl">
-                        <table class="w-full text-left text-sm min-w-[900px]">
+                        <table class="w-full text-left text-sm min-w-[1000px]">
                             <thead class="bg-slate-900 text-slate-400 text-[10px] uppercase font-black tracking-widest">
                                 <tr>
-                                    <th class="px-8 py-6">Loja / Slug</th>
-                                    <th class="px-8 py-6">Assinatura</th>
-                                    <th class="px-8 py-6">E-mail Oficial</th>
+                                    <th class="px-4 py-6 w-12 text-center">#</th>
+                                    <th class="px-8 py-6">Loja / Endereço</th>
+                                    <th class="px-8 py-6">Plano</th>
+                                    <th class="px-8 py-6">Performance (Mês)</th>
                                     <th class="px-8 py-6">Status</th>
                                     <th class="px-8 py-6 text-right">Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="storesTableBody" class="divide-y divide-slate-800/50">
-                                <tr><td colspan="5" class="p-16 text-center text-slate-500 italic">Carregando dados...</td></tr>
+                                <tr><td colspan="6" class="p-16 text-center text-slate-500 italic">Inicializando banco de dados...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -140,7 +172,7 @@
                     <div id="plansGrid" class="grid grid-cols-1 md:grid-cols-3 gap-8"></div>
                 </div>
 
-                <!-- VIEW: CREATE -->
+                <!-- VIEW: CREATE (Painel de Ativação) -->
                 <div id="view-create" class="hidden animate-fade-in max-w-2xl mx-auto">
                     <div class="mb-10 text-center"><h2 class="text-3xl font-bold text-white">Ativar Vitrine</h2><p class="text-sm text-slate-500">Criação do acesso administrativo oficial</p></div>
                     <form id="createStoreForm" class="bg-slate-900 border border-slate-800 p-10 rounded-[3.5rem] space-y-8 shadow-2xl">
@@ -153,66 +185,53 @@
                             <div class="space-y-1.5"><label class="text-[10px] font-bold text-slate-500 uppercase ml-2">WhatsApp</label><input type="text" id="storePhone" required class="input-premium"></div>
                             <div class="md:col-span-2 space-y-1.5"><label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Senha de Acesso</label><input type="text" id="adminPass" required class="input-premium font-mono"></div>
                         </div>
-                        <button type="submit" id="btnSubmitStore" class="w-full bg-indigo-600 text-white font-bold py-5 rounded-3xl shadow-xl transition-all btn-hover uppercase tracking-widest text-xs">Confirmar e Gerar Acesso</button>
+                        <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-5 rounded-3xl shadow-xl transition-all btn-hover uppercase tracking-widest text-xs">Confirmar e Gerar Acesso</button>
                     </form>
                 </div>
 
                 <!-- VIEW: RESULT -->
                 <div id="view-result-view" class="hidden animate-fade-in max-w-md mx-auto text-center space-y-8">
-                    <div class="bg-green-500/10 border border-green-500/30 rounded-[3.5rem] p-10 shadow-2xl">
+                    <div class="bg-indigo-900/20 border border-indigo-500/30 rounded-[3.5rem] p-10 shadow-2xl">
                         <div class="w-20 h-20 bg-green-500 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg"><i data-lucide="check" class="text-white w-10 h-10"></i></div>
-                        <h3 class="text-2xl font-bold text-white mb-2">Vitrine Criada!</h3>
-                        <div class="bg-slate-950 p-6 rounded-3xl text-left text-xs font-mono space-y-3 border border-slate-800">
+                        <h3 class="text-2xl font-bold text-white mb-2">Vitrine Ativada!</h3>
+                        <div class="bg-slate-950 p-6 rounded-3xl text-left text-xs font-mono space-y-3 mt-6 border border-slate-800">
                             <p class="flex justify-between"><span>LOGIN:</span> <span id="resEmail" class="text-green-400 font-bold"></span></p>
                             <p class="flex justify-between"><span>PASS:</span> <span id="resPass" class="text-indigo-400 font-bold"></span></p>
                         </div>
-                        <button id="btnWhatsAppNotify" class="w-full bg-[#25D366] text-white font-bold py-5 rounded-3xl mt-8 flex justify-center items-center gap-3 shadow-lg btn-hover"><i data-lucide="message-circle" class="w-6 h-6"></i> Enviar via WhatsApp</button>
+                        <button id="btnWhatsAppNotify" class="w-full bg-[#25D366] text-white font-bold py-5 rounded-3xl mt-8 flex justify-center items-center gap-3 shadow-lg btn-hover"><i data-lucide="message-circle" class="w-6 h-6"></i> Enviar credenciais via WhatsApp</button>
                     </div>
                 </div>
 
                 <!-- VIEW: SETTINGS -->
                 <div id="view-settings" class="hidden animate-fade-in">
                     <h2 class="text-2xl font-bold text-white mb-10">Configurações do Painel</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div class="bg-slate-900 border border-slate-800 p-8 rounded-[3rem] flex flex-col justify-between">
-                            <div><h4 class="font-bold text-white">Notificações Sonoras</h4><p class="text-xs text-slate-500 mt-2">Alerta acústico para novas solicitações</p></div>
-                            <button onclick="toggleAudioAlert()" id="btnToggleAudio" class="mt-8 py-4 px-6 rounded-2xl border flex items-center justify-center gap-3 font-bold text-xs uppercase transition-all"></button>
-                        </div>
-                        <div class="bg-slate-900 border border-slate-800 p-8 rounded-[3rem] space-y-6">
-                            <div><h4 class="font-bold text-white">Integração Webhook</h4><p class="text-xs text-slate-500 mt-2">Receba alertas no Discord ou Slack</p></div>
-                            <input type="url" id="webhookUrl" placeholder="https://discord.com/api/webhooks/..." class="input-premium">
-                            <button onclick="saveWebhook()" class="w-full bg-indigo-600 py-4 rounded-2xl text-xs font-bold uppercase tracking-widest shadow-lg btn-hover">Salvar URL</button>
-                        </div>
+                    <div class="bg-slate-900 border border-slate-800 p-8 rounded-[3rem] max-w-lg">
+                        <button onclick="toggleAudioAlert()" id="btnToggleAudio" class="w-full py-4 px-6 rounded-2xl border flex items-center justify-center gap-3 font-bold text-xs uppercase transition-all"></button>
                     </div>
                 </div>
+
             </div>
         </div>
     </main>
 
     <!-- MODAIS -->
     <div id="plan-modal" class="fixed inset-0 z-[160] modal-blur hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-700 rounded-[3rem] max-w-xl w-full p-8 shadow-2xl relative animate-pop-in flex flex-col max-h-[90vh] overflow-hidden">
+        <div class="bg-slate-900 border border-slate-700 rounded-[3rem] max-w-xl w-full p-8 shadow-2xl animate-pop-in">
             <button onclick="closePlanModal()" class="absolute top-8 right-8 text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
-            <div class="flex items-center gap-5 mb-8">
-                <div class="bg-pink-600/20 p-4 rounded-3xl"><i data-lucide="package" class="w-8 h-8 text-pink-500"></i></div>
-                <div><h2 class="text-2xl font-bold text-white" id="planModalTitle">Configurar Plano</h2><p class="text-xs text-slate-400">Regras de negócio e preços</p></div>
-            </div>
-            <form id="planForm" onsubmit="savePlan(event)" class="space-y-5 overflow-y-auto pr-2">
+            <h2 class="text-2xl font-bold text-white mb-8">Configurar Plano</h2>
+            <form id="planForm" onsubmit="savePlan(event)" class="space-y-5">
                 <input type="hidden" id="planId">
                 <input type="text" id="planName" placeholder="Nome do Plano" required class="input-premium">
                 <div class="grid grid-cols-2 gap-4">
-                    <input type="text" id="planPrice" placeholder="Valor Mensal (R$)" required class="input-premium">
-                    <input type="number" id="planMaxProducts" placeholder="Limite Produtos" required class="input-premium">
+                    <input type="text" id="planPrice" placeholder="Preço (Ex: 99.90)" required class="input-premium">
+                    <input type="number" id="planMaxProducts" placeholder="Limite Prod." required class="input-premium">
                 </div>
                 <div class="grid grid-cols-2 gap-4">
-                    <input type="number" id="planMaxBanners" placeholder="Limite Banners" required class="input-premium">
-                    <select id="planHasCarousel" class="input-premium bg-slate-800"><option value="true">Com Carrossel</option><option value="false">Sem Carrossel</option></select>
+                    <input type="number" id="planMaxBanners" placeholder="Banners" required class="input-premium">
+                    <select id="planHasCarousel" class="input-premium bg-slate-800"><option value="true">Carrossel: ATIVADO</option><option value="false">Carrossel: DESATIVADO</option></select>
                 </div>
-                <textarea id="planFeatures" class="input-premium min-h-[100px]" placeholder="Benefícios (um por linha)..."></textarea>
-                <div class="pt-4 flex gap-3">
-                    <button type="button" onclick="closePlanModal()" class="flex-1 py-4 bg-slate-800 text-slate-300 font-bold rounded-2xl">Cancelar</button>
-                    <button type="submit" class="flex-2 bg-pink-600 text-white font-bold py-4 px-10 rounded-2xl shadow-lg btn-hover">Salvar Plano</button>
-                </div>
+                <textarea id="planFeatures" class="input-premium min-h-[100px]" placeholder="Benefícios (Um por linha)"></textarea>
+                <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-lg btn-hover">Salvar Alterações</button>
             </form>
         </div>
     </div>
@@ -220,15 +239,12 @@
     <div id="edit-modal" class="fixed inset-0 z-[160] modal-blur hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-700 rounded-[3rem] max-w-lg w-full p-10 shadow-2xl relative animate-pop-in">
             <button onclick="closeEditModal()" class="absolute top-8 right-8 text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
-            <div class="flex items-center gap-5 mb-8">
-                <div class="bg-indigo-600/20 p-4 rounded-3xl"><i data-lucide="store" class="w-8 h-8 text-indigo-500"></i></div>
-                <div><h2 class="text-2xl font-bold text-white">Editar Loja</h2><p class="text-xs text-slate-400">Manutenção de cadastro</p></div>
-            </div>
+            <h2 class="text-2xl font-bold text-white mb-8">Editar Unidade</h2>
             <form id="editForm" onsubmit="saveStoreEdit(event)" class="space-y-5">
                 <input type="hidden" id="editSlug">
-                <input type="text" id="editName" placeholder="Nome" required class="input-premium">
+                <input type="text" id="editName" placeholder="Nome da Unidade" required class="input-premium">
                 <select id="editPlan" required class="input-premium bg-slate-800"></select>
-                <input type="email" id="editEmail" placeholder="E-mail" required class="input-premium">
+                <input type="email" id="editEmail" placeholder="E-mail Administrativo" required class="input-premium">
                 <input type="number" id="editBillingDay" placeholder="Dia Vencimento" required class="input-premium">
                 <button type="submit" class="w-full py-4.5 bg-indigo-600 text-white font-bold rounded-2xl btn-hover uppercase tracking-widest text-xs">Guardar Alterações</button>
             </form>
@@ -238,32 +254,31 @@
     <script type="module">
         import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, onSnapshot, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, onSnapshot, serverTimestamp, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyAdwsGBTApwOwqr37qCv72gdPRbipsZG0Q", authDomain: "meuestoque-1badc.firebaseapp.com", projectId: "meuestoque-1badc", storageBucket: "meuestoque-1badc.appspot.com", messagingSenderId: "730003067834", appId: "1:730003067834:web:b205f1ea59053345960383" };
         const mainApp = initializeApp(firebaseConfig);
         const auth = getAuth(mainApp);
         const db = getFirestore(mainApp);
 
+        // --- GLOBAL STATE ---
         let availablePlans = [];
-        let allStores = [];
+        let allStores = []; 
+        let currentSort = 'name';
+        let isGrouped = false;
         let config = { audioAlert: true, webhookUrl: '' };
         let lastRequestCount = -1;
-        let listenersInitialized = false;
+        let analyticsCache = {}; // Cache analítico
 
         const formatBRL = (v) => Number(v).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
 
-        // AUTH
+        // --- AUTH ---
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnLogin');
-            btn.disabled = true; btn.innerHTML = 'Verificando...';
-            try {
-                await signInWithEmailAndPassword(auth, document.getElementById('loginEmail').value, document.getElementById('loginPassword').value);
-            } catch (err) { 
-                document.getElementById('loginError').classList.remove('hidden');
-                btn.disabled = false; btn.innerHTML = 'Aceder ao Painel';
-            }
+            btn.disabled = true; btn.innerHTML = 'Autenticando...';
+            try { await signInWithEmailAndPassword(auth, document.getElementById('loginEmail').value, document.getElementById('loginPassword').value); } 
+            catch (err) { document.getElementById('loginError').classList.remove('hidden'); btn.disabled = false; btn.innerHTML = 'Aceder'; }
         });
 
         onAuthStateChanged(auth, async (user) => {
@@ -271,7 +286,7 @@
                 const adminDoc = await getDoc(doc(db, "internal_admins", user.uid));
                 if (adminDoc.exists()) {
                     document.getElementById('login-screen').classList.add('hidden');
-                    if (!listenersInitialized) { setupAllListeners(); listenersInitialized = true; }
+                    initSystem();
                 } else { await signOut(auth); }
             } else { document.getElementById('login-screen').classList.remove('hidden'); }
             lucide.createIcons();
@@ -279,171 +294,255 @@
 
         window.handleSignOut = () => signOut(auth).then(() => window.location.reload());
 
-        // LISTENERS
-        function setupAllListeners() {
-            onSnapshot(doc(db, "config_superadmin", "notifications"), (d) => { if(d.exists()){config=d.data(); document.getElementById('webhookUrl').value=config.webhookUrl||''; updateAudioUI();} });
+        // --- INITIALIZATION ---
+        function initSystem() {
+            // Configurações
+            onSnapshot(doc(db, "config_superadmin", "notifications"), (d) => { if(d.exists()){config=d.data(); updateAudioUI();} });
 
+            // Planos
             onSnapshot(collection(db, "config_plans"), (snap) => {
                 availablePlans = snap.docs.map(d => ({id: d.id, ...d.data()}));
-                const sSelect = document.getElementById('storePlan');
-                const eSelect = document.getElementById('editPlan');
-                sSelect.innerHTML = '<option value="">Selecione o plano...</option>';
-                eSelect.innerHTML = '';
-                document.getElementById('plansGrid').innerHTML = availablePlans.map(p => {
-                    sSelect.insertAdjacentHTML('beforeend', `<option value="${p.id}">${p.name}</option>`);
-                    eSelect.insertAdjacentHTML('beforeend', `<option value="${p.id}">${p.name}</option>`);
-                    return `<div class="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] flex flex-col h-full shadow-lg">
-                        <h3 class="font-bold text-white text-xl mb-1">${p.name}</h3>
-                        <span class="text-pink-500 text-xs font-black uppercase mb-6">${formatBRL(p.price)}</span>
-                        <div class="flex-1 space-y-2 mb-8">
-                            <p class="text-[10px] text-slate-500 font-bold uppercase"><i data-lucide="package" class="w-3 h-3 inline"></i> ${p.maxProducts} Prods</p>
-                            <div class="text-[10px] text-slate-400 leading-relaxed">${(p.features||'').split('\n').map(f => `• ${f}`).join('<br>')}</div>
-                        </div>
-                        <div class="flex gap-2 pt-6 border-t border-slate-800">
-                            <button onclick='openPlanModal(${JSON.stringify(p)})' class="flex-1 bg-slate-800 text-[10px] font-black uppercase py-3 rounded-2xl">Editar</button>
-                            <button onclick="deletePlan('${p.id}')" class="p-3 text-slate-500 hover:text-red-500 rounded-2xl"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                        </div>
-                    </div>`;
-                }).join('');
-                lucide.createIcons();
+                renderPlansUI();
+                renderPlanSelects();
             });
 
-            onSnapshot(collection(db, "stores_registry"), (snap) => { allStores=snap.docs.map(d=>d.data()); renderStoreTable(allStores); });
+            // Lojas Registradas
+            onSnapshot(collection(db, "stores_registry"), async (snap) => {
+                const raw = snap.docs.map(d => ({...d.data(), slug: d.id}));
+                document.getElementById('syncStatus').innerText = "Analisando Performance...";
+                await fetchAnalyticsForSort(raw);
+                allStores = raw;
+                document.getElementById('syncStatus').innerText = "Sincronizado";
+                processAndRender();
+            });
 
+            // Solicitações
             onSnapshot(collection(db, "registration_requests"), (snap) => {
                 const badge = document.getElementById('reqCountBadge');
                 badge.textContent = snap.size; badge.classList.toggle('hidden', snap.size === 0);
                 document.getElementById('emptyRequests').classList.toggle('hidden', snap.size > 0);
                 if(lastRequestCount !== -1 && snap.size > lastRequestCount && config.audioAlert) new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3').play().catch(()=>{});
                 lastRequestCount = snap.size;
-
-                // RESTAURAÇÃO COMPLETA DAS INFORMAÇÕES DA SOLICITAÇÃO
-                document.getElementById('requestsList').innerHTML = snap.docs.map(d => {
-                    const r = d.data();
-                    const planDetails = availablePlans.find(p => p.id === r.planId) || {name: 'Manual'};
-                    return `<div class="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] shadow-xl hover:border-indigo-500/40 transition-all">
-                        <div class="flex justify-between items-start mb-4">
-                            <span class="text-[10px] font-black uppercase text-indigo-500 tracking-widest">Pendente</span>
-                            <span class="text-[9px] text-slate-600 font-mono">#${d.id.slice(-4).toUpperCase()}</span>
-                        </div>
-                        <h4 class="text-white font-bold text-xl mb-1">${r.storeName}</h4>
-                        <p class="text-slate-400 text-xs mb-4 flex items-center gap-2"><i data-lucide="mail" class="w-3 h-3"></i> ${r.email}</p>
-                        
-                        <div class="space-y-2 py-4 border-y border-slate-800/50 mb-4">
-                            <p class="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2">
-                                <i data-lucide="user" class="w-3.5 h-3.5"></i> Resp: <span class="text-white ml-auto">${r.ownerName || 'N/A'}</span>
-                            </p>
-                            <p class="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2">
-                                <i data-lucide="phone" class="w-3.5 h-3.5"></i> Zap: <span class="text-white ml-auto">${r.phone || 'N/A'}</span>
-                            </p>
-                        </div>
-                        
-                        <div class="p-3 bg-indigo-500/5 border border-indigo-500/20 rounded-xl mb-6">
-                            <p class="text-[9px] font-black text-indigo-400 uppercase mb-1">Plano Escolhido</p>
-                            <p class="text-xs font-bold text-white">${planDetails.name}</p>
-                        </div>
-
-                        <div class="flex gap-2">
-                            <button onclick='approveRequest(${JSON.stringify({id: d.id, ...r}).replace(/'/g, "&#39;")})' class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all">Analisar</button>
-                            <button onclick="deleteRequest('${d.id}')" class="p-3.5 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-2xl transition-all"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                        </div>
-                    </div>`;
-                }).join('');
-                lucide.createIcons();
+                renderRequests(snap.docs.map(d => ({id: d.id, ...d.data()})));
             });
         }
 
+        // --- ANALYTICS CACHE ENGINE ---
+        async function fetchAnalyticsForSort(stores) {
+            const now = new Date();
+            const todayId = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            const sevenDays = now.getTime() - (7 * 24 * 60 * 60 * 1000);
+            const thirtyDays = now.getTime() - (30 * 24 * 60 * 60 * 1000);
+
+            const promises = stores.map(async (s) => {
+                if (analyticsCache[s.slug]) return;
+                try {
+                    const global = await getDoc(doc(db, `stores/${s.slug}/analytics/global`));
+                    const total = global.exists() ? (global.data().totalVisits || 0) : 0;
+                    
+                    const history = await getDocs(query(collection(db, `stores/${s.slug}/analytics_history`), orderBy('date', 'desc'), limit(30)));
+                    let day = 0, week = 0, month = 0;
+                    
+                    history.forEach(doc => {
+                        const d = doc.data();
+                        const v = d.visits || 0;
+                        const time = (d.date?.toDate ? d.date.toDate() : new Date(d.date)).getTime();
+                        if (doc.id === todayId) day = v;
+                        if (time >= sevenDays) week += v;
+                        if (time >= thirtyDays) month += v;
+                    });
+                    analyticsCache[s.slug] = { day, week, month, total };
+                } catch(e) { analyticsCache[s.slug] = { day: 0, week: 0, month: 0, total: 0 }; }
+            });
+            await Promise.all(promises);
+        }
+
+        // --- DASHBOARD CONTROLS ---
+        window.setSort = (crit) => {
+            currentSort = crit;
+            document.querySelectorAll('.sort-btn').forEach(b => b.classList.toggle('active', b.id === `sort-${crit}`));
+            processAndRender();
+        };
+
+        window.toggleGrouping = () => {
+            isGrouped = !isGrouped;
+            const btn = document.getElementById('btnGroup');
+            btn.classList.toggle('text-indigo-400', isGrouped);
+            btn.classList.toggle('text-slate-400', !isGrouped);
+            processAndRender();
+        };
+
+        function processAndRender() {
+            let list = [...allStores];
+            list.sort((a, b) => {
+                const sA = analyticsCache[a.slug] || {day:0, week:0, month:0, total:0};
+                const sB = analyticsCache[b.slug] || {day:0, week:0, month:0, total:0};
+                switch(currentSort) {
+                    case 'name': return a.storeName.localeCompare(b.storeName);
+                    case 'date': return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
+                    case 'day': return sB.day - sA.day;
+                    case 'week': return sB.week - sA.week;
+                    case 'month': return sB.month - sA.month;
+                    case 'total': return sB.total - sA.total;
+                    default: return 0;
+                }
+            });
+            isGrouped ? renderGroupedTable(list) : renderStoreTable(list);
+        }
+
+        // --- UI RENDERERS ---
         function renderStoreTable(list) {
-            document.getElementById('storesTableBody').innerHTML = list.map(s => `
-                <tr class="border-b border-slate-800/50 hover:bg-slate-900/40">
-                    <td class="px-8 py-6 font-bold text-white">${s.storeName} <br><span class="text-[9px] text-slate-500 font-mono">${s.slug}</span></td>
-                    <td class="px-8 py-6"><span class="bg-indigo-500/10 text-indigo-400 text-[9px] font-black px-2 py-0.5 rounded border border-indigo-500/20 uppercase">${s.planId || 'N/A'}</span></td>
-                    <td class="px-8 py-6 text-slate-400 text-xs">${s.ownerEmail}</td>
-                    <td class="px-8 py-6 text-[10px] font-bold uppercase ${s.status === 'active' ? 'text-green-400' : 'text-red-400'}">${s.status}</td>
-                    <td class="px-8 py-6 text-right flex gap-3 justify-end">
-                        <button onclick='openEditModal(${JSON.stringify(s)})' class="p-2.5 text-indigo-400 hover:bg-indigo-900/30 rounded-xl"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
-                        <button onclick="toggleSuspend('${s.slug}', '${s.status}')" class="p-2.5 text-slate-500 hover:text-white rounded-xl"><i data-lucide="power" class="w-4 h-4"></i></button>
-                        <button onclick="deleteStore('${s.slug}')" class="p-2.5 text-slate-600 hover:text-red-500 rounded-xl"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                    </td>
-                </tr>`).join('');
+            const tbody = document.getElementById('storesTableBody');
+            if (!list.length) { tbody.innerHTML = `<tr><td colspan="6" class="p-16 text-center text-slate-500 italic">Nenhum registro encontrado.</td></tr>`; return; }
+            tbody.innerHTML = list.map(s => buildRowMarkup(s)).join('');
             lucide.createIcons();
         }
 
-        // AÇÕES
-        document.getElementById('createStoreForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('btnSubmitStore');
-            btn.disabled = true; btn.innerHTML = 'Ativando...';
-            const pId = document.getElementById('storePlan').value;
-            const plan = availablePlans.find(p => p.id === pId);
-            const slug = document.getElementById('storeSlug').value;
-            const email = document.getElementById('adminEmail').value;
-            const pass = document.getElementById('adminPass').value;
-            const name = document.getElementById('storeName').value;
-            const phone = document.getElementById('storePhone').value;
-            const rid = document.getElementById('requestId').value;
+        function renderGroupedTable(list) {
+            const tbody = document.getElementById('storesTableBody');
+            const groups = list.reduce((acc, s) => {
+                const p = s.planId || 'Sem Plano';
+                if (!acc[p]) acc[p] = [];
+                acc[p].push(s);
+                return acc;
+            }, {});
+            let html = '';
+            Object.keys(groups).forEach(p => {
+                html += `<tr class="group-header"><td colspan="6" class="px-8 py-4 text-[10px] font-black text-indigo-400 uppercase tracking-widest border-l-4 border-indigo-600">PLANO: ${p} (${groups[p].length} unidades)</td></tr>`;
+                html += groups[p].map(s => buildRowMarkup(s)).join('');
+            });
+            tbody.innerHTML = html;
+            lucide.createIcons();
+        }
 
-            const secApp = initializeApp(firebaseConfig, "sec_app_" + Date.now());
-            const secAuth = getAuth(secApp);
-            try {
-                const cred = await createUserWithEmailAndPassword(secAuth, email, pass);
-                const storeData = { 
-                    storeName: name, ownerEmail: email, ownerPhone: phone, 
-                    planId: plan.name, // ALTERAÇÃO CIRÚRGICA 1: Salva o nome exato digitado
-                    maxProducts: plan.maxProducts, maxBanners: plan.maxBanners || 3,
-                    hasCarousel: plan.hasCarousel || false, status: 'active', subscriptionStatus: 'active',
-                    isStoreOpen: true, billingDay: 10 
-                };
-                await setDoc(doc(db, "stores", slug, "config", "store"), storeData);
-                await setDoc(doc(db, "admin_directory", cred.user.uid), { storeId: slug, role: 'owner' });
-                await setDoc(doc(db, "stores_registry", slug), { ...storeData, slug });
-                if(rid) await deleteDoc(doc(db, "registration_requests", rid));
-                document.getElementById('resEmail').innerText = email; document.getElementById('resPass').innerText = pass;
-                document.getElementById('btnWhatsAppNotify').onclick = () => window.open(`https://wa.me/${phone.replace(/\D/g,'')}?text=${encodeURIComponent(`🚀 *Sua vitrine está ativa!*\nLoja: ${name}\nLogin: ${email}\nSenha: ${pass}`)}`,'_blank');
-                await signOut(secAuth); await deleteApp(secApp); switchView('result-view');
-            } catch (err) { alert("Erro: " + err.message); await deleteApp(secApp); }
-            btn.disabled = false; btn.innerHTML = 'Confirmar e Gerar Acesso';
-        });
+        function buildRowMarkup(s) {
+            const stats = analyticsCache[s.slug] || {day:0, week:0, month:0, total:0};
+            return `
+                <tr class="border-b border-slate-800/50 hover:bg-slate-900/30 transition-all">
+                    <td class="px-4 py-6 text-center">
+                        <button onclick="toggleStoreDetails('${s.slug}')" class="p-2 hover:bg-slate-800 rounded-lg text-slate-500 transition-transform chevron-rotate" id="btn-exp-${s.slug}">
+                            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                        </button>
+                    </td>
+                    <td class="px-8 py-6">
+                        <div class="flex flex-col">
+                            <span class="font-bold text-white">${s.storeName}</span>
+                            <span class="text-[9px] text-slate-500 font-mono tracking-tighter">${s.slug}</span>
+                        </div>
+                    </td>
+                    <td class="px-8 py-6"><span class="bg-indigo-500/10 text-indigo-400 text-[9px] font-black px-2 py-0.5 rounded border border-indigo-500/20 uppercase">${s.planId}</span></td>
+                    <td class="px-8 py-6">
+                        <div class="flex items-center gap-3">
+                            <span class="text-white font-black text-sm">${stats.month}</span>
+                            <div class="w-16 h-1 bg-slate-800 rounded-full overflow-hidden">
+                                <div class="bg-indigo-500 h-full" style="width: ${Math.min((stats.month/500)*100, 100)}%"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-8 py-6 text-[10px] font-bold uppercase ${s.status === 'active' ? 'text-green-400' : 'text-red-400'}">
+                        <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full ${s.status === 'active' ? 'bg-green-400 animate-pulse' : 'bg-red-400'}"></span>${s.status}</div>
+                    </td>
+                    <td class="px-8 py-6 text-right flex gap-3 justify-end">
+                        <button onclick='openEditModal(${JSON.stringify(s)})' class="p-2.5 text-indigo-400 hover:bg-indigo-900/30 rounded-xl transition-colors"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                        <button onclick="toggleSuspend('${s.slug}', '${s.status}')" class="p-2.5 ${s.status === 'suspended' ? 'text-green-400' : 'text-slate-500'} hover:bg-slate-800 rounded-xl transition-colors"><i data-lucide="power" class="w-4 h-4"></i></button>
+                        <button onclick="deleteStore('${s.slug}')" class="p-2.5 text-slate-600 hover:text-red-500 rounded-xl transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </td>
+                </tr>
+                <tr id="details-${s.slug}" class="hidden bg-slate-950/80">
+                    <td colspan="6" class="px-12 py-10 border-l-4 border-indigo-600">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 animate-pop-in">
+                            <div class="bg-slate-900 p-5 rounded-3xl border border-slate-800">
+                                <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Hoje</p>
+                                <h4 class="text-3xl font-bold text-white">${stats.day}</h4>
+                            </div>
+                            <div class="bg-slate-900 p-5 rounded-3xl border border-slate-800">
+                                <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Semana</p>
+                                <h4 class="text-3xl font-bold text-indigo-400">${stats.week}</h4>
+                            </div>
+                            <div class="bg-slate-900 p-5 rounded-3xl border border-slate-800">
+                                <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Mês</p>
+                                <h4 class="text-3xl font-bold text-pink-500">${stats.month}</h4>
+                            </div>
+                            <div class="bg-slate-900 p-5 rounded-3xl border border-slate-800">
+                                <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Total Geral</p>
+                                <h4 class="text-3xl font-bold text-indigo-200">${stats.total}</h4>
+                            </div>
+                        </div>
+                        <div class="mt-6 flex flex-wrap gap-8 text-[10px] text-slate-500 uppercase font-black tracking-widest">
+                            <div class="flex items-center gap-2"><i data-lucide="mail" class="w-3.5 h-3.5"></i> EMAIL: <span class="text-slate-300 font-mono">${s.ownerEmail}</span></div>
+                            <div class="flex items-center gap-2"><i data-lucide="phone" class="w-3.5 h-3.5"></i> WHATSAPP: <span class="text-slate-300 font-mono">${s.ownerPhone || 'N/A'}</span></div>
+                            <div class="flex items-center gap-2"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> VENCIMENTO: <span class="text-slate-300 font-mono">DIA ${s.billingDay || 10}</span></div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
 
-        window.savePlan = async (e) => {
-            e.preventDefault();
-            const pName = document.getElementById('planName').value;
-            const id = document.getElementById('planId').value || 'plan_' + Date.now();
-            try {
-                await setDoc(doc(db, "config_plans", id), {
-                    name: pName, // O nome agora é o que foi digitado
-                    price: parseFloat(document.getElementById('planPrice').value),
-                    maxProducts: parseInt(document.getElementById('planMaxProducts').value),
-                    maxBanners: parseInt(document.getElementById('planMaxBanners').value),
-                    hasCarousel: document.getElementById('planHasCarousel').value === 'true',
-                    features: document.getElementById('planFeatures').value
-                });
-                closePlanModal();
-            } catch(e) { alert("Erro ao salvar: " + e.message); }
+        // --- PLANOS UI ---
+        function renderPlansUI() {
+            document.getElementById('plansGrid').innerHTML = availablePlans.map(p => `
+                <div class="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] flex flex-col h-full shadow-lg relative overflow-hidden">
+                    <div class="absolute top-0 right-0 bg-indigo-600/20 text-indigo-400 px-4 py-1 text-[8px] font-black uppercase tracking-widest rounded-bl-xl">${p.hasCarousel ? 'Com Carrossel' : 'Sem Carrossel'}</div>
+                    <h3 class="font-bold text-white text-xl mb-1">${p.name}</h3>
+                    <span class="text-pink-500 text-xs font-black uppercase mb-6">${formatBRL(p.price)} / mês</span>
+                    <div class="space-y-3 mb-8 flex-1">
+                        <div class="flex items-center gap-2 text-[10px] text-slate-400 font-bold uppercase"><i data-lucide="package" class="w-3.5 h-3.5"></i> ${p.maxProducts} Produtos</div>
+                        <div class="flex items-center gap-2 text-[10px] text-slate-400 font-bold uppercase"><i data-lucide="layout" class="w-3.5 h-3.5"></i> ${p.maxBanners} Banners</div>
+                        <div class="pt-4 border-t border-slate-800 text-[10px] text-slate-500 leading-relaxed">${(p.features || '').split('\n').map(f => `• ${f}`).join('<br>')}</div>
+                    </div>
+                    <div class="flex gap-2 pt-6 border-t border-slate-800">
+                        <button onclick='openPlanModal(${JSON.stringify(p)})' class="flex-1 bg-slate-800 hover:bg-slate-700 text-[10px] font-black uppercase py-3 rounded-2xl transition-all">Editar</button>
+                        <button onclick="deletePlan('${p.id}')" class="p-3 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-2xl transition-all"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                </div>`).join('');
+            lucide.createIcons();
+        }
+
+        // --- SOLICITAÇÕES UI ---
+        function renderRequests(list) {
+            document.getElementById('requestsList').innerHTML = list.map(r => {
+                const p = availablePlans.find(pl => pl.id === r.planId) || {name: 'Manual'};
+                return `
+                <div class="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] shadow-xl hover:border-indigo-500/40 transition-all group">
+                    <div class="flex justify-between items-start mb-6">
+                        <span class="bg-indigo-600/10 text-indigo-500 text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-indigo-500/20">Solicitação</span>
+                        <span class="text-[9px] text-slate-600 font-mono tracking-tighter">#${r.id.slice(-5).toUpperCase()}</span>
+                    </div>
+                    <h4 class="text-white font-bold text-xl mb-1 truncate">${r.storeName}</h4>
+                    <p class="text-slate-400 text-xs mb-6 flex items-center gap-2"><i data-lucide="mail" class="w-3 h-3"></i> ${r.email}</p>
+                    
+                    <div class="space-y-3 py-4 border-y border-slate-800/50 mb-6">
+                        <div class="flex justify-between items-center text-[10px] font-bold uppercase"><span class="text-slate-500">Responsável:</span><span class="text-white">${r.ownerName || 'N/A'}</span></div>
+                        <div class="flex justify-between items-center text-[10px] font-bold uppercase"><span class="text-slate-500">WhatsApp:</span><span class="text-indigo-400">${r.phone || 'N/A'}</span></div>
+                        <div class="flex justify-between items-center text-[10px] font-bold uppercase"><span class="text-slate-500">Plano Alvo:</span><span class="text-pink-500">${p.name}</span></div>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button onclick='approveRequest(${JSON.stringify(r).replace(/'/g, "&#39;")})' class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg transition-all">Analisar & Ativar</button>
+                        <button onclick="deleteRequest('${r.id}')" class="p-3.5 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-2xl transition-all"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                </div>`;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        // --- HANDLERS ---
+        window.toggleStoreDetails = (slug) => {
+            const row = document.getElementById(`details-${slug}`);
+            const btn = document.getElementById(`btn-exp-${slug}`);
+            if(!row.classList.contains('hidden')) {
+                row.classList.add('hidden');
+                btn.classList.remove('chevron-active');
+            } else {
+                row.classList.remove('hidden');
+                btn.classList.add('chevron-active');
+            }
         };
 
-        window.saveStoreEdit = async (e) => {
-            e.preventDefault();
-            const slug = document.getElementById('editSlug').value;
-            const plan = availablePlans.find(p => p.id === document.getElementById('editPlan').value);
-            if(!plan) return alert("Selecione um plano.");
-
-            // ALTERAÇÃO CIRÚRGICA 2: Corrige a falha de atualização da loja (sincroniza limites e nome)
-            const data = { 
-                storeName: document.getElementById('editName').value, 
-                ownerEmail: document.getElementById('editEmail').value, 
-                planId: plan.name, // Sincroniza o nome exato
-                maxProducts: plan.maxProducts, 
-                maxBanners: plan.maxBanners, 
-                hasCarousel: plan.hasCarousel,
-                billingDay: parseInt(document.getElementById('editBillingDay').value) 
-            };
-            try {
-                await updateDoc(doc(db, "stores_registry", slug), data);
-                await updateDoc(doc(db, "stores", slug, "config", "store"), data);
-                alert("Loja atualizada com sucesso!");
-                closeEditModal();
-            } catch(err) { alert("Erro ao atualizar: " + err.message); }
+        window.handleSearch = (v) => {
+            const term = v.toLowerCase();
+            const filtered = allStores.filter(s => s.storeName.toLowerCase().includes(term) || s.slug.toLowerCase().includes(term));
+            renderStoreTable(filtered);
         };
 
         window.approveRequest = (r) => {
@@ -453,14 +552,102 @@
             document.getElementById('storeSlug').value = (r.storeName || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, '-');
             document.getElementById('adminPass').value = Math.random().toString(36).slice(-8);
             document.getElementById('storePhone').value = r.phone || '';
-            const matchedPlan = availablePlans.find(p => p.id === r.planId || p.name === r.planId);
-            if(matchedPlan) document.getElementById('storePlan').value = matchedPlan.id;
+            const matched = availablePlans.find(p => p.id === r.planId || p.name === r.planId);
+            if(matched) document.getElementById('storePlan').value = matched.id;
             switchView('create');
         };
 
-        // EXCLUSÃO RESTAURADA
-        window.deleteRequest = async (id) => { if(confirm("Apagar solicitação permanentemente?")) await deleteDoc(doc(db, "registration_requests", id)); };
-        
+        // --- FORM ACTIONS ---
+        document.getElementById('createStoreForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.disabled = true; btn.innerHTML = 'Provisionando Infraestrutura...';
+            
+            const pId = document.getElementById('storePlan').value;
+            const plan = availablePlans.find(p => p.id === pId);
+            const slug = document.getElementById('storeSlug').value;
+            const email = document.getElementById('adminEmail').value;
+            const pass = document.getElementById('adminPass').value;
+            const name = document.getElementById('storeName').value;
+            const phone = document.getElementById('storePhone').value;
+            const rid = document.getElementById('requestId').value;
+
+            const secApp = initializeApp(firebaseConfig, "provisioning_app_" + Date.now());
+            const secAuth = getAuth(secApp);
+            try {
+                const cred = await createUserWithEmailAndPassword(secAuth, email, pass);
+                const storeData = { 
+                    storeName: name, ownerEmail: email, ownerPhone: phone, 
+                    planId: plan.name, maxProducts: plan.maxProducts, maxBanners: plan.maxBanners || 3,
+                    hasCarousel: plan.hasCarousel || false, status: 'active', subscriptionStatus: 'active',
+                    isStoreOpen: true, billingDay: 10, createdAt: serverTimestamp() 
+                };
+                await setDoc(doc(db, "stores", slug, "config", "store"), storeData);
+                await setDoc(doc(db, "admin_directory", cred.user.uid), { storeId: slug, role: 'owner' });
+                await setDoc(doc(db, "stores_registry", slug), { ...storeData, slug });
+                if(rid) await deleteDoc(doc(db, "registration_requests", rid));
+                
+                document.getElementById('resEmail').innerText = email; 
+                document.getElementById('resPass').innerText = pass;
+                document.getElementById('btnWhatsAppNotify').onclick = () => window.open(`https://wa.me/${phone.replace(/\D/g,'')}?text=${encodeURIComponent(`🚀 *Sua Vitrine está ATIVA!*\n\nAcesse: vitrine.link/${slug}\nLogin: ${email}\nSenha: ${pass}\n\nAbraço e boas vendas!`)}`,'_blank');
+                
+                await signOut(secAuth); await deleteApp(secApp); switchView('result-view');
+            } catch (err) { alert("Erro de Provisionamento: " + err.message); await deleteApp(secApp); }
+            btn.disabled = false; btn.innerHTML = 'Confirmar e Gerar Acesso';
+        });
+
+        window.savePlan = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('planId').value || 'plan_' + Date.now();
+            await setDoc(doc(db, "config_plans", id), {
+                name: document.getElementById('planName').value,
+                price: parseFloat(document.getElementById('planPrice').value),
+                maxProducts: parseInt(document.getElementById('planMaxProducts').value),
+                maxBanners: parseInt(document.getElementById('planMaxBanners').value),
+                hasCarousel: document.getElementById('planHasCarousel').value === 'true',
+                features: document.getElementById('planFeatures').value
+            });
+            closePlanModal();
+        };
+
+        window.saveStoreEdit = async (e) => {
+            e.preventDefault();
+            const slug = document.getElementById('editSlug').value;
+            const plan = availablePlans.find(p => p.id === document.getElementById('editPlan').value);
+            const data = { 
+                storeName: document.getElementById('editName').value, 
+                ownerEmail: document.getElementById('editEmail').value, 
+                planId: plan.name, maxProducts: plan.maxProducts, 
+                billingDay: parseInt(document.getElementById('editBillingDay').value) 
+            };
+            await updateDoc(doc(db, "stores_registry", slug), data);
+            await updateDoc(doc(db, "stores", slug, "config", "store"), data);
+            closeEditModal();
+        };
+
+        // --- NAVIGATION & UTILS ---
+        window.switchView = (v) => {
+            ['list', 'requests', 'plans', 'create', 'result-view', 'settings'].forEach(x => {
+                if(document.getElementById(`view-${x}`)) document.getElementById(`view-${x}`).classList.add('hidden');
+                if(document.getElementById(`nav-${x}`)) document.getElementById(`nav-${x}`).classList.remove('bg-indigo-600/10', 'text-indigo-400', 'border-indigo-600/50');
+            });
+            if(document.getElementById(`view-${v}`)) document.getElementById(`view-${v}`).classList.remove('hidden');
+            if(document.getElementById(`nav-${v}`)) document.getElementById(`nav-${v}`).classList.add('bg-indigo-600/10', 'text-indigo-400', 'border-indigo-600/50');
+            if(window.innerWidth < 768) toggleSidebar();
+        };
+
+        function renderPlanSelects() {
+            const sSelect = document.getElementById('storePlan');
+            const eSelect = document.getElementById('editPlan');
+            sSelect.innerHTML = '<option value="">Selecione um Plano...</option>';
+            eSelect.innerHTML = '';
+            availablePlans.forEach(p => {
+                const opt = `<option value="${p.id}">${p.name} (${formatBRL(p.price)})</option>`;
+                sSelect.insertAdjacentHTML('beforeend', opt);
+                eSelect.insertAdjacentHTML('beforeend', opt);
+            });
+        }
+
         window.openPlanModal = (p = null) => {
             document.getElementById('planId').value = p?.id || '';
             document.getElementById('planName').value = p?.name || '';
@@ -472,56 +659,43 @@
             document.getElementById('plan-modal').classList.remove('hidden');
         };
         window.closePlanModal = () => document.getElementById('plan-modal').classList.add('hidden');
+        
         window.openEditModal = (s) => {
             document.getElementById('editSlug').value = s.slug;
             document.getElementById('editName').value = s.storeName;
             document.getElementById('editEmail').value = s.ownerEmail;
-            const p = availablePlans.find(p => p.name === s.planId);
-            document.getElementById('editPlan').value = p ? p.id : '';
             document.getElementById('editBillingDay').value = s.billingDay || 10;
+            const p = availablePlans.find(pl => pl.name === s.planId);
+            if(p) document.getElementById('editPlan').value = p.id;
             document.getElementById('edit-modal').classList.remove('hidden');
         };
         window.closeEditModal = () => document.getElementById('edit-modal').classList.add('hidden');
+
+        window.deleteStore = async (s) => { if(confirm("Apagar UNIDADE permanentemente? Esta ação não pode ser desfeita.")) await deleteDoc(doc(db, "stores_registry", s)); };
+        window.deletePlan = async (id) => { if(confirm("Apagar PLANO?")) await deleteDoc(doc(db, "config_plans", id)); };
+        window.deleteRequest = async (id) => { if(confirm("Apagar solicitação?")) await deleteDoc(doc(db, "registration_requests", id)); };
         window.publishPlansForRegistration = async () => {
-            if(!confirm("Atualizar site público?")) return;
             const pubRef = collection(db, "public_plans");
             const snap = await getDocs(pubRef);
             await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
-            await Promise.all(availablePlans.map(p => setDoc(doc(pubRef, p.id), {...p, isActive: true, publishedAt: serverTimestamp()})));
-            alert("Publicado!");
-        };
-        window.handleSearch = (v) => {
-            const term = v.toLowerCase();
-            const filtered = allStores.filter(s => s.storeName.toLowerCase().includes(term) || s.slug.toLowerCase().includes(term));
-            renderStoreTable(filtered);
+            await Promise.all(availablePlans.map(p => setDoc(doc(pubRef, p.id), {...p, isActive: true})));
+            alert("Sincronizado com o site público!");
         };
         window.toggleSuspend = async (slug, curr) => {
             const next = curr === 'active' ? 'suspended' : 'active';
-            if(!confirm(`Mudar status para ${next}?`)) return;
             await updateDoc(doc(db, "stores_registry", slug), { status: next });
             await updateDoc(doc(db, "stores", slug, "config", "store"), { subscriptionStatus: next });
         };
-        window.deleteStore = async (s) => { if(confirm("Apagar registro?")) await deleteDoc(doc(db, "stores_registry", s)); };
-        window.deletePlan = async (id) => { if(confirm("Apagar plano?")) await deleteDoc(doc(db, "config_plans", id)); };
-        window.switchView = (v) => {
-            ['list', 'requests', 'plans', 'create', 'result-view', 'settings'].forEach(x => {
-                if(document.getElementById(`view-${x}`)) document.getElementById(`view-${x}`).classList.add('hidden');
-                if(document.getElementById(`nav-${x}`)) document.getElementById(`nav-${x}`).classList.remove('bg-indigo-600/10', 'text-indigo-400', 'border-indigo-600/50');
-            });
-            if(document.getElementById(`view-${v}`)) document.getElementById(`view-${v}`).classList.remove('hidden');
-            if(document.getElementById(`nav-${v}`)) document.getElementById(`nav-${v}`).classList.add('bg-indigo-600/10', 'text-indigo-400', 'border-indigo-600/50');
-            if(window.innerWidth < 768) toggleSidebar();
-        };
+        window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('-translate-x-full');
         window.toggleAudioAlert = () => { config.audioAlert = !config.audioAlert; saveConfig(); };
-        window.saveWebhook = () => { config.webhookUrl = document.getElementById('webhookUrl').value; saveConfig(); };
         async function saveConfig() { await setDoc(doc(db, "config_superadmin", "notifications"), config); updateAudioUI(); }
         function updateAudioUI() {
             const btn = document.getElementById('btnToggleAudio'); if(!btn) return;
-            btn.innerHTML = `<i data-lucide="${config.audioAlert ? 'volume-2' : 'volume-x'}" class="w-5 h-5"></i> <span>Som: ${config.audioAlert ? 'Ativado' : 'Mudo'}</span>`;
-            btn.className = `mt-8 py-4 px-6 rounded-2xl border flex items-center justify-center gap-3 font-bold text-xs uppercase ${config.audioAlert ? 'bg-indigo-600/20 text-indigo-400 border-indigo-600/30' : 'bg-slate-800 text-slate-500 border-slate-700'}`;
+            btn.innerHTML = `<i data-lucide="${config.audioAlert ? 'volume-2' : 'volume-x'}" class="w-5 h-5"></i> <span>Notificações: ${config.audioAlert ? 'ATIVADAS' : 'MUDO'}</span>`;
+            btn.className = `w-full py-4 px-6 rounded-2xl border flex items-center justify-center gap-3 font-bold text-xs uppercase ${config.audioAlert ? 'bg-indigo-600/20 text-indigo-400 border-indigo-600/30' : 'bg-slate-800 text-slate-500 border-slate-700'}`;
             lucide.createIcons();
         }
-        window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('-translate-x-full');
+
     </script>
 </body>
 </html>
