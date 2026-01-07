@@ -611,19 +611,28 @@
         };
 
         window.saveStoreEdit = async (e) => {
-            e.preventDefault();
-            const slug = document.getElementById('editSlug').value;
-            const plan = availablePlans.find(p => p.id === document.getElementById('editPlan').value);
-            const data = { 
-                storeName: document.getElementById('editName').value, 
-                ownerEmail: document.getElementById('editEmail').value, 
-                planId: plan.name, maxProducts: plan.maxProducts, 
-                billingDay: parseInt(document.getElementById('editBillingDay').value) 
-            };
-            await updateDoc(doc(db, "stores_registry", slug), data);
-            await updateDoc(doc(db, "stores", slug, "config", "store"), data);
-            closeEditModal();
-        };
+  e.preventDefault();
+
+  const slug = document.getElementById('editSlug').value;
+  const planIdSelected = document.getElementById('editPlan').value;
+  const plan = availablePlans.find(p => p.id === planIdSelected);
+
+  const data = {
+    storeName: document.getElementById('editName').value,
+    ownerEmail: document.getElementById('editEmail').value,
+    plan: {
+      id: plan.id,       // ex: plan_especial
+      name: plan.name    // ex: Especial
+    },
+    planId: plan.name,
+    billingDay: parseInt(
+      document.getElementById('editBillingDay').value
+    )
+  };
+  await updateDoc(doc(db, "stores_registry", slug), data);
+  await updateDoc(doc(db, "stores", slug, "config", "store"), data);
+  closeEditModal();
+};
 
         // --- NAVIGATION & UTILS ---
         window.switchView = (v) => {
