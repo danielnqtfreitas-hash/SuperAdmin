@@ -557,11 +557,12 @@
             switchView('create');
         };
 
-        // --- FORM ACTIONS ---
+                // --- FORM ACTIONS ---
         document.getElementById('createStoreForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = e.target.querySelector('button[type="submit"]');
-            btn.disabled = true; btn.innerHTML = 'Provisionando Infraestrutura...';
+            btn.disabled = true; 
+            btn.innerHTML = '<span class="animate-pulse">Provisionando Infraestrutura...</span>';
             
             const pId = document.getElementById('storePlan').value;
             const plan = availablePlans.find(p => p.id === pId);
@@ -572,29 +573,69 @@
             const phone = document.getElementById('storePhone').value;
             const rid = document.getElementById('requestId').value;
 
+            // Criar uma instância secundária para não deslogar o Super Admin atual
             const secApp = initializeApp(firebaseConfig, "provisioning_app_" + Date.now());
             const secAuth = getAuth(secApp);
+
             try {
+                // 1. CRIAR O USUÁRIO NO FIREBASE AUTH (O que faltava)
                 const cred = await createUserWithEmailAndPassword(secAuth, email, pass);
+
+                // 2. PREPARAR OS DADOS (Com os limites que você adicionou)
                 const storeData = { 
-                    storeName: name, ownerEmail: email, ownerPhone: phone, 
-                    planId: plan.name, maxProducts: plan.maxProducts, maxBanners: plan.maxBanners || 3,
-                    hasCarousel: plan.hasCarousel || false, status: 'active', subscriptionStatus: 'active',
-                    isStoreOpen: true, billingDay: 10, createdAt: serverTimestamp() 
+                    storeName: name, 
+                    ownerEmail: email, 
+                    ownerPhone: phone, 
+                    planId: plan.name, 
+                    maxProducts: parseInt(plan.maxProducts), 
+                    maxBanners: parseInt(plan.maxBanners),
+                    hasCarousel: plan.hasCarousel === true || plan.hasCarousel === "true", 
+                    status: 'active', 
+                    subscriptionStatus: 'active',
+                    isStoreOpen: true, 
+                    billingDay: 10, 
+                    createdAt: serverTimestamp(),
+                    lastUpdate: Date.now()
                 };
+
+                // 3. SALVAR NO FIRESTORE (Configuração da Loja)
                 await setDoc(doc(db, "stores", slug, "config", "store"), storeData);
-                await setDoc(doc(db, "admin_directory", cred.user.uid), { storeId: slug, role: 'owner' });
+                
+                // 4. VINCULAR O UID AO SLUG DA LOJA
+                await setDoc(doc(db, "admin_directory", cred.user.uid), { 
+                    storeId: slug, 
+                    role: 'owner' 
+                });
+
+                // 5. ATUALIZAR O REGISTRO GLOBAL
                 await setDoc(doc(db, "stores_registry", slug), { ...storeData, slug });
+
+                // 6. LIMPAR SOLICITAÇÃO PENDENTE
                 if(rid) await deleteDoc(doc(db, "registration_requests", rid));
                 
+                // Interface de Sucesso
                 document.getElementById('resEmail').innerText = email; 
                 document.getElementById('resPass').innerText = pass;
-                document.getElementById('btnWhatsAppNotify').onclick = () => window.open(`https://wa.me/${phone.replace(/\D/g,'')}?text=${encodeURIComponent(`🚀 *Sua Vitrine está ATIVA!*\n\nAcesse: vitrine.link/${slug}\nLogin: ${email}\nSenha: ${pass}\n\nAbraço e boas vendas!`)}`,'_blank');
+                document.getElementById('btnWhatsAppNotify').onclick = () => {
+                    const msg = `🚀 *Sua Vitrine está ATIVA!*\n\nAcesse seu painel:\nhttps://danielnqtfreitas-hash.github.io/Painel/\n\nLogin: ${email}\nSenha: ${pass}\n\nAbraço e boas vendas!`;
+                    window.open(`https://wa.me/${phone.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`,'_blank');
+                };
                 
-                await signOut(secAuth); await deleteApp(secApp); switchView('result-view');
-            } catch (err) { alert("Erro de Provisionamento: " + err.message); await deleteApp(secApp); }
-            btn.disabled = false; btn.innerHTML = 'Confirmar e Gerar Acesso';
+                // Finalização
+                await signOut(secAuth); 
+                await deleteApp(secApp); 
+                switchView('result-view');
+
+            } catch (err) { 
+                console.error(err);
+                alert("Erro de Provisionamento: " + err.message); 
+                await deleteApp(secApp); 
+            } finally {
+                btn.disabled = false; 
+                btn.innerHTML = 'Confirmar e Gerar Acesso';
+            }
         });
+
 
         window.savePlan = async (e) => {
             e.preventDefault();
@@ -611,28 +652,44 @@
         };
 
         window.saveStoreEdit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  const slug = document.getElementById('editSlug').value;
-  const planIdSelected = document.getElementById('editPlan').value;
-  const plan = availablePlans.find(p => p.id === planIdSelected);
+    const slug = document.getElementById('editSlug').value;
+    const planIdSelected = document.getElementById('editPlan').value;
+    const plan = availablePlans.find(p => p.id === planIdSelected);
 
-  const data = {
-    storeName: document.getElementById('editName').value,
-    ownerEmail: document.getElementById('editEmail').value,
-    plan: {
-      id: plan.id,       // ex: plan_especial
-      name: plan.name    // ex: Especial
-    },
-    planId: plan.name,
-    billingDay: parseInt(
-      document.getElementById('editBillingDay').value
-    )
-  };
-  await updateDoc(doc(db, "stores_registry", slug), data);
-  await updateDoc(doc(db, "stores", slug, "config", "store"), data);
-  closeEditModal();
+    if (!plan) {
+        alert("Selecione um plano válido.");
+        return;
+    }
+
+    // Criamos o objeto com TODOS os limites do plano selecionado
+    const data = {
+        storeName: document.getElementById('editName').value,
+        ownerEmail: document.getElementById('editEmail').value,
+        planId: plan.name,
+        // Injetando as propriedades reais do plano para o lojista ler
+        maxProducts: parseInt(plan.maxProducts),
+        maxBanners: parseInt(plan.maxBanners),
+        hasCarousel: plan.hasCarousel === true || plan.hasCarousel === "true",
+        billingDay: parseInt(document.getElementById('editBillingDay').value),
+        lastUpdate: Date.now()
+    };
+
+    try {
+        // Atualiza o registro administrativo
+        await updateDoc(doc(db, "stores_registry", slug), data);
+        // Atualiza a configuração real que o painel do lojista lê
+        await updateDoc(doc(db, "stores", slug, "config", "store"), data);
+        
+        showToast("✅ Unidade e limites atualizados!");
+        closeEditModal();
+    } catch (err) {
+        console.error(err);
+        alert("Erro ao atualizar limites: " + err.message);
+    }
 };
+
 
         // --- NAVIGATION & UTILS ---
         window.switchView = (v) => {
@@ -704,6 +761,12 @@
             btn.className = `w-full py-4 px-6 rounded-2xl border flex items-center justify-center gap-3 font-bold text-xs uppercase ${config.audioAlert ? 'bg-indigo-600/20 text-indigo-400 border-indigo-600/30' : 'bg-slate-800 text-slate-500 border-slate-700'}`;
             lucide.createIcons();
         }
+
+        // Adicione isso no final do seu script para o showToast funcionar
+window.showToast = (msg) => {
+    alert(msg); // Por enquanto, o alert resolve, ou você pode criar um elemento HTML para isso
+};
+
 
     </script>
 </body>
