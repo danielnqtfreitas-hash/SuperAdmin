@@ -748,10 +748,34 @@
             alert("Sincronizado com o site público!");
         };
         window.toggleSuspend = async (slug, curr) => {
-            const next = curr === 'active' ? 'suspended' : 'active';
-            await updateDoc(doc(db, "stores_registry", slug), { status: next });
-            await updateDoc(doc(db, "stores", slug, "config", "store"), { subscriptionStatus: next });
-        };
+    const isSuspended = curr === 'suspended';
+    const nextStatus = isSuspended ? 'active' : 'suspended';
+    
+    const confirmMsg = isSuspended 
+        ? "Deseja REATIVAR esta loja? O lojista voltará a ter acesso ao painel." 
+        : "Deseja SUSPENDER esta loja? O lojista será bloqueado imediatamente.";
+
+    if (!confirm(confirmMsg)) return;
+
+    try {
+        // 1. Atualiza no registro administrativo
+        await updateDoc(doc(db, "stores_registry", slug), { 
+            status: nextStatus 
+        });
+
+        // 2. Atualiza na configuração da loja (Onde o lojista "escuta")
+        await updateDoc(doc(db, "stores", slug, "config", "store"), { 
+            subscriptionStatus: nextStatus,
+            lastUpdate: Date.now() 
+        });
+
+        alert(`Loja ${isSuspended ? 'ativada' : 'suspensa'} com sucesso!`);
+    } catch (e) {
+        console.error("Erro ao mudar status:", e);
+        alert("Erro técnico ao tentar mudar o status.");
+    }
+};
+
         window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('-translate-x-full');
         window.toggleAudioAlert = () => { config.audioAlert = !config.audioAlert; saveConfig(); };
         async function saveConfig() { await setDoc(doc(db, "config_superadmin", "notifications"), config); updateAudioUI(); }
