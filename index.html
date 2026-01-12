@@ -783,51 +783,85 @@
     lucide.createIcons();
 };
 
-window.savePlan = async (e) => {
+window.saveStoreEdit = async (e) => {
     e.preventDefault();
-    const id = document.getElementById('planId').value || 'plan_' + Date.now();
-    const btn = document.getElementById('btnSavePlan');
-    btn.disabled = true;
 
-    const planData = {
-        name: document.getElementById('planName').value,
-        price: parseFloat(document.getElementById('planPrice').value) || 0,
-        maxProducts: parseInt(document.getElementById('planMaxProducts').value) || 0,
-        maxBanners: parseInt(document.getElementById('planMaxBanners').value) || 1,
+    // 1. Localiza a loja e o plano selecionado
+    const slug = document.getElementById('editSlug').value;
+    const planIdSelected = document.getElementById('editPlan').value;
+    const plan = availablePlans.find(p => p.id === planIdSelected);
+
+    if (!plan) {
+        alert("Selecione um plano válido para aplicar os benefícios.");
+        return;
+    }
+
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.innerHTML = "Sincronizando Benefícios...";
+
+    // 2. Prepara o objeto com a HERANÇA DIRETA do plano
+    // Tudo o que você definiu no molde do plano agora passa para a loja
+    const data = {
+        storeName: document.getElementById('editName').value,
+        ownerEmail: document.getElementById('editEmail').value,
+        planId: plan.name,
         
-        // Novos campos PRO
-        hasCarousel: document.getElementById('planHasCarousel').checked,
-        hasFinance: document.getElementById('planHasFinance').checked,
-        hasMagicCategories: document.getElementById('planHasMagic').checked,
+        // --- BENEFÍCIOS NOVOS (A CASCATA) ---
+        maxProducts: parseInt(plan.maxProducts) || 0,
+        maxBanners: parseInt(plan.maxBanners) || 1,
+        hasCarousel: plan.hasCarousel === true,
+        hasFinance: plan.hasFinance === true,
+        hasMagicCategories: plan.hasMagicCategories === true,
         
-        features: document.getElementById('planFeatures').value,
-        updatedAt: Date.now()
+        billingDay: parseInt(document.getElementById('editBillingDay').value) || 10,
+        lastUpdate: Date.now()
     };
 
     try {
-        // Salva na coleção principal de controle
-        await setDoc(doc(db, "config_plans", id), planData);
-        alert("Plano configurado com sucesso!");
-        closePlanModal();
-    } catch (error) {
-        console.error(error);
-        alert("Erro ao salvar plano.");
+        // 3. Atualiza o Registro Administrativo
+        await updateDoc(doc(db, "stores_registry", slug), data);
+
+        // 4. Atualiza a Configuração Real (Onde o Lojista "escuta" em tempo real)
+        // Isso fará o botão Financeiro aparecer e os limites subirem na hora!
+        await updateDoc(doc(db, "stores", slug, "config", "store"), data);
+        
+        alert(`✅ Sucesso! O plano foi alterado para ${plan.name} e todos os benefícios (Financeiro, Limites e Setores Mágicos) foram liberados.`);
+        closeEditModal();
+    } catch (err) {
+        console.error("Erro ao sincronizar benefícios:", err);
+        alert("Erro ao atualizar unidade: " + err.message);
     } finally {
         btn.disabled = false;
+        btn.innerHTML = "Guardar Alterações";
     }
 };
 
         window.closePlanModal = () => document.getElementById('plan-modal').classList.add('hidden');
         
         window.openEditModal = (s) => {
-            document.getElementById('editSlug').value = s.slug;
-            document.getElementById('editName').value = s.storeName;
-            document.getElementById('editEmail').value = s.ownerEmail;
-            document.getElementById('editBillingDay').value = s.billingDay || 10;
-            const p = availablePlans.find(pl => pl.name === s.planId);
-            if(p) document.getElementById('editPlan').value = p.id;
-            document.getElementById('edit-modal').classList.remove('hidden');
-        };
+    // 1. Preenche os campos básicos de identificação
+    document.getElementById('editSlug').value = s.slug || '';
+    document.getElementById('editName').value = s.storeName || '';
+    document.getElementById('editEmail').value = s.ownerEmail || '';
+    document.getElementById('editBillingDay').value = s.billingDay || 10;
+
+    // 2. Localiza o plano correto no Select
+    // Sendo 's.planId' o nome do plano salvo na loja, buscamos o ID dele no array availablePlans
+    const selectPlan = document.getElementById('editPlan');
+    const matchedPlan = availablePlans.find(pl => pl.name === s.planId);
+    
+    if (matchedPlan) {
+        selectPlan.value = matchedPlan.id;
+    } else {
+        selectPlan.value = ""; // Caso o plano não exista mais ou seja erro
+    }
+
+    // 3. Exibe o modal e atualiza os ícones
+    document.getElementById('edit-modal').classList.remove('hidden');
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+};
+
         window.closeEditModal = () => document.getElementById('edit-modal').classList.add('hidden');
 
         window.deleteStore = async (s) => { if(confirm("Apagar UNIDADE permanentemente? Esta ação não pode ser desfeita.")) await deleteDoc(doc(db, "stores_registry", s)); };
