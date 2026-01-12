@@ -216,25 +216,45 @@
 
     <!-- MODAIS -->
     <div id="plan-modal" class="fixed inset-0 z-[160] modal-blur hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-700 rounded-[3rem] max-w-xl w-full p-8 shadow-2xl animate-pop-in">
-            <button onclick="closePlanModal()" class="absolute top-8 right-8 text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
-            <h2 class="text-2xl font-bold text-white mb-8">Configurar Plano</h2>
-            <form id="planForm" onsubmit="savePlan(event)" class="space-y-5">
-                <input type="hidden" id="planId">
-                <input type="text" id="planName" placeholder="Nome do Plano" required class="input-premium">
-                <div class="grid grid-cols-2 gap-4">
-                    <input type="text" id="planPrice" placeholder="Preço (Ex: 99.90)" required class="input-premium">
-                    <input type="number" id="planMaxProducts" placeholder="Limite Prod." required class="input-premium">
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <input type="number" id="planMaxBanners" placeholder="Banners" required class="input-premium">
-                    <select id="planHasCarousel" class="input-premium bg-slate-800"><option value="true">Carrossel: ATIVADO</option><option value="false">Carrossel: DESATIVADO</option></select>
-                </div>
-                <textarea id="planFeatures" class="input-premium min-h-[100px]" placeholder="Benefícios (Um por linha)"></textarea>
-                <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-lg btn-hover">Salvar Alterações</button>
-            </form>
+        <div class="bg-slate-900 border border-slate-700 rounded-[3rem] max-w-xl w-full p-8 shadow-2xl animate-pop-in relative">
+    <button onclick="closePlanModal()" class="absolute top-8 right-8 text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+    <h2 class="text-2xl font-bold text-white mb-8">Configurar Plano</h2>
+    <form id="planForm" onsubmit="window.savePlan(event)" class="space-y-5">
+        <input type="hidden" id="planId">
+        <input type="text" id="planName" placeholder="Nome do Plano" required class="input-premium">
+        
+        <div class="grid grid-cols-2 gap-4">
+            <input type="text" id="planPrice" placeholder="Preço (Ex: 99.90)" required class="input-premium">
+            <input type="number" id="planMaxProducts" placeholder="Limite Prod." required class="input-premium">
         </div>
-    </div>
+
+        <div class="grid grid-cols-1 gap-4">
+            <input type="number" id="planMaxBanners" placeholder="Quantidade de Banners" required class="input-premium">
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 border-t border-slate-800 pt-4 mt-2">
+            <div class="col-span-full text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Recursos Liberados</div>
+            
+            <label class="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl border border-slate-700 cursor-pointer hover:bg-slate-800 transition-all">
+                <span class="text-[10px] font-bold text-slate-300">Aba Financeira</span>
+                <input type="checkbox" id="planHasFinance" class="w-4 h-4 accent-indigo-500">
+            </label>
+
+            <label class="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl border border-slate-700 cursor-pointer hover:bg-slate-800 transition-all">
+                <span class="text-[10px] font-bold text-slate-300">Setores Mágicos</span>
+                <input type="checkbox" id="planHasMagic" class="w-4 h-4 accent-indigo-500">
+            </label>
+            
+            <label class="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl border border-slate-700 cursor-pointer hover:bg-slate-800 transition-all">
+                <span class="text-[10px] font-bold text-slate-300">Carrossel Banners</span>
+                <input type="checkbox" id="planHasCarousel" class="w-4 h-4 accent-indigo-500">
+            </label>
+        </div>
+
+        <textarea id="planFeatures" class="input-premium min-h-[80px] mt-2" placeholder="Benefícios (Um por linha)"></textarea>
+        <button type="submit" id="btnSavePlan" class="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-lg btn-hover uppercase tracking-widest text-xs">Salvar Plano</button>
+    </form>
+   </div>
 
     <div id="edit-modal" class="fixed inset-0 z-[160] modal-blur hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-700 rounded-[3rem] max-w-lg w-full p-10 shadow-2xl relative animate-pop-in">
@@ -638,18 +658,42 @@
 
 
         window.savePlan = async (e) => {
-            e.preventDefault();
-            const id = document.getElementById('planId').value || 'plan_' + Date.now();
-            await setDoc(doc(db, "config_plans", id), {
-                name: document.getElementById('planName').value,
-                price: parseFloat(document.getElementById('planPrice').value),
-                maxProducts: parseInt(document.getElementById('planMaxProducts').value),
-                maxBanners: parseInt(document.getElementById('planMaxBanners').value),
-                hasCarousel: document.getElementById('planHasCarousel').value === 'true',
-                features: document.getElementById('planFeatures').value
-            });
-            closePlanModal();
-        };
+    e.preventDefault(); // Impede a página de recarregar
+    
+    const id = document.getElementById('planId').value || 'plan_' + Date.now();
+    const btn = document.getElementById('btnSavePlan');
+    btn.disabled = true;
+
+    // 1. Aqui nós capturamos os valores dos campos do formulário
+    const planData = {
+        name: document.getElementById('planName').value,
+        price: parseFloat(document.getElementById('planPrice').value) || 0,
+        maxProducts: parseInt(document.getElementById('planMaxProducts').value) || 0,
+        maxBanners: parseInt(document.getElementById('planMaxBanners').value) || 0,
+        
+        // ESTES SÃO OS NOVOS CAMPOS (OS CHECKBOXES)
+        hasCarousel: document.getElementById('planHasCarousel').checked,
+        hasFinance: document.getElementById('planHasFinance').checked,
+        hasMagicCategories: document.getElementById('planHasMagic').checked,
+        
+        features: document.getElementById('planFeatures').value, // Descrição que aparece no registro
+        updatedAt: Date.now()
+    };
+
+    try {
+        // 2. Salvamos na coleção de planos públicos
+        await setDoc(doc(db, "public_plans", id), planData);
+        
+        alert("Plano configurado com sucesso! Agora as lojas que assinarem este plano herdarão estas travas.");
+        closePlanModal(); // Fecha o modal de criação de planos
+    } catch (error) {
+        console.error("Erro ao salvar plano:", error);
+        alert("Erro ao salvar o plano.");
+    } finally {
+        btn.disabled = false;
+    }
+};
+
 
         window.saveStoreEdit = async (e) => {
     e.preventDefault();
@@ -663,33 +707,41 @@
         return;
     }
 
-    // Criamos o objeto com TODOS os limites do plano selecionado
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+
+    // Criamos o objeto HERDANDO tudo do plano (A CASCATA)
     const data = {
         storeName: document.getElementById('editName').value,
         ownerEmail: document.getElementById('editEmail').value,
         planId: plan.name,
-        // Injetando as propriedades reais do plano para o lojista ler
+        
+        // Limites herdados do molde do plano
         maxProducts: parseInt(plan.maxProducts),
         maxBanners: parseInt(plan.maxBanners),
-        hasCarousel: plan.hasCarousel === true || plan.hasCarousel === "true",
+        hasCarousel: plan.hasCarousel === true,
+        hasFinance: plan.hasFinance === true,
+        hasMagicCategories: plan.hasMagicCategories === true,
+        
         billingDay: parseInt(document.getElementById('editBillingDay').value),
         lastUpdate: Date.now()
     };
 
     try {
-        // Atualiza o registro administrativo
+        // Atualiza o registro do Admin
         await updateDoc(doc(db, "stores_registry", slug), data);
-        // Atualiza a configuração real que o painel do lojista lê
+        // Atualiza a configuração que o Painel do Lojista escuta em tempo real
         await updateDoc(doc(db, "stores", slug, "config", "store"), data);
         
-        showToast("✅ Unidade e limites atualizados!");
+        alert("✅ Loja e Recursos atualizados com sucesso!");
         closeEditModal();
     } catch (err) {
         console.error(err);
-        alert("Erro ao atualizar limites: " + err.message);
+        alert("Erro ao atualizar: " + err.message);
+    } finally {
+        btn.disabled = false;
     }
 };
-
 
         // --- NAVIGATION & UTILS ---
         window.switchView = (v) => {
@@ -715,15 +767,56 @@
         }
 
         window.openPlanModal = (p = null) => {
-            document.getElementById('planId').value = p?.id || '';
-            document.getElementById('planName').value = p?.name || '';
-            document.getElementById('planPrice').value = p?.price || '';
-            document.getElementById('planMaxProducts').value = p?.maxProducts || '';
-            document.getElementById('planMaxBanners').value = p?.maxBanners || 3;
-            document.getElementById('planHasCarousel').value = p?.hasCarousel ? 'true' : 'false';
-            document.getElementById('planFeatures').value = p?.features || '';
-            document.getElementById('plan-modal').classList.remove('hidden');
-        };
+    document.getElementById('planId').value = p?.id || '';
+    document.getElementById('planName').value = p?.name || '';
+    document.getElementById('planPrice').value = p?.price || '';
+    document.getElementById('planMaxProducts').value = p?.maxProducts || '';
+    document.getElementById('planMaxBanners').value = p?.maxBanners || 1;
+    document.getElementById('planFeatures').value = p?.features || '';
+    
+    // Carrega os novos Checkboxes
+    document.getElementById('planHasFinance').checked = p?.hasFinance === true;
+    document.getElementById('planHasMagic').checked = p?.hasMagicCategories === true;
+    document.getElementById('planHasCarousel').checked = p?.hasCarousel === true;
+
+    document.getElementById('plan-modal').classList.remove('hidden');
+    lucide.createIcons();
+};
+
+window.savePlan = async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('planId').value || 'plan_' + Date.now();
+    const btn = document.getElementById('btnSavePlan');
+    btn.disabled = true;
+
+    const planData = {
+        name: document.getElementById('planName').value,
+        price: parseFloat(document.getElementById('planPrice').value) || 0,
+        maxProducts: parseInt(document.getElementById('planMaxProducts').value) || 0,
+        maxBanners: parseInt(document.getElementById('planMaxBanners').value) || 1,
+        
+        // Novos campos PRO
+        hasCarousel: document.getElementById('planHasCarousel').checked,
+        hasFinance: document.getElementById('planHasFinance').checked,
+        hasMagicCategories: document.getElementById('planHasMagic').checked,
+        
+        features: document.getElementById('planFeatures').value,
+        updatedAt: Date.now()
+    };
+
+    try {
+        // Salva na coleção principal de controle
+        await setDoc(doc(db, "config_plans", id), planData);
+        alert("Plano configurado com sucesso!");
+        closePlanModal();
+    } catch (error) {
+        console.error(error);
+        alert("Erro ao salvar plano.");
+    } finally {
+        btn.disabled = false;
+    }
+};
+
         window.closePlanModal = () => document.getElementById('plan-modal').classList.add('hidden');
         
         window.openEditModal = (s) => {
