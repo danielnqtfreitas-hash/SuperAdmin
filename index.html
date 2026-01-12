@@ -215,58 +215,90 @@
     </main>
 
     <!-- MODAIS -->
+
     <div id="plan-modal" class="fixed inset-0 z-[160] modal-blur hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-700 rounded-[3rem] max-w-xl w-full p-8 shadow-2xl animate-pop-in relative">
-    <button onclick="closePlanModal()" class="absolute top-8 right-8 text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
-    <h2 class="text-2xl font-bold text-white mb-8">Configurar Plano</h2>
-    <form id="planForm" onsubmit="window.savePlan(event)" class="space-y-5">
-        <input type="hidden" id="planId">
-        <input type="text" id="planName" placeholder="Nome do Plano" required class="input-premium">
-        
-        <div class="grid grid-cols-2 gap-4">
-            <input type="text" id="planPrice" placeholder="Preço (Ex: 99.90)" required class="input-premium">
-            <input type="number" id="planMaxProducts" placeholder="Limite Prod." required class="input-premium">
-        </div>
-
-        <div class="grid grid-cols-1 gap-4">
-            <input type="number" id="planMaxBanners" placeholder="Quantidade de Banners" required class="input-premium">
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 border-t border-slate-800 pt-4 mt-2">
-            <div class="col-span-full text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Recursos Liberados</div>
+            <button onclick="closePlanModal()" class="absolute top-8 right-8 text-slate-400 hover:text-white">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
             
-            <label class="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl border border-slate-700 cursor-pointer hover:bg-slate-800 transition-all">
-                <span class="text-[10px] font-bold text-slate-300">Aba Financeira</span>
-                <input type="checkbox" id="planHasFinance" class="w-4 h-4 accent-indigo-500">
-            </label>
-
-            <label class="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl border border-slate-700 cursor-pointer hover:bg-slate-800 transition-all">
-                <span class="text-[10px] font-bold text-slate-300">Setores Mágicos</span>
-                <input type="checkbox" id="planHasMagic" class="w-4 h-4 accent-indigo-500">
-            </label>
+            <h2 class="text-2xl font-bold text-white mb-8">Configurar Plano</h2>
             
-            <label class="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl border border-slate-700 cursor-pointer hover:bg-slate-800 transition-all">
-                <span class="text-[10px] font-bold text-slate-300">Carrossel Banners</span>
-                <input type="checkbox" id="planHasCarousel" class="w-4 h-4 accent-indigo-500">
-            </label>
-        </div>
+            <form id="planForm" onsubmit="window.savePlan(event)" class="space-y-5">
+                <input type="hidden" id="planId">
+                <input type="text" id="planName" placeholder="Nome do Plano" required class="input-premium">
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="text" id="planPrice" placeholder="Preço (Ex: 99.90)" required class="input-premium">
+                    <input type="number" id="planMaxProducts" placeholder="Limite Prod." required class="input-premium">
+                </div>
 
-        <textarea id="planFeatures" class="input-premium min-h-[80px] mt-2" placeholder="Benefícios (Um por linha)"></textarea>
-        <button type="submit" id="btnSavePlan" class="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-lg btn-hover uppercase tracking-widest text-xs">Salvar Plano</button>
-    </form>
-   </div>
+                <div class="grid grid-cols-1 gap-4">
+                    <input type="number" id="planMaxBanners" placeholder="Quantidade de Banners" required class="input-premium">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 border-t border-slate-800 pt-4 mt-2">
+                    <div class="col-span-full text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Recursos Liberados</div>
+                    
+                    <label class="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl border border-slate-700 cursor-pointer">
+                        <span class="text-[10px] font-bold text-slate-300">Aba Financeira</span>
+                        <input type="checkbox" id="planHasFinance" class="w-4 h-4 accent-indigo-500">
+                    </label>
+
+                    <label class="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl border border-slate-700 cursor-pointer">
+                        <span class="text-[10px] font-bold text-slate-300">Setores Mágicos</span>
+                        <input type="checkbox" id="planHasMagic" class="w-4 h-4 accent-indigo-500">
+                    </label>
+                    
+                    <label class="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl border border-slate-700 cursor-pointer">
+                        <span class="text-[10px] font-bold text-slate-300">Carrossel Banners</span>
+                        <input type="checkbox" id="planHasCarousel" class="w-4 h-4 accent-indigo-500">
+                    </label>
+                </div>
+
+                <textarea id="planFeatures" class="input-premium min-h-[80px]" placeholder="Benefícios (Um por linha)"></textarea>
+                
+                <button type="submit" id="btnSavePlan" class="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-lg btn-hover uppercase tracking-widest text-xs">
+                    Salvar Plano
+                </button>
+            </form>
+        </div>
+    </div>
 
     <div id="edit-modal" class="fixed inset-0 z-[160] modal-blur hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-700 rounded-[3rem] max-w-lg w-full p-10 shadow-2xl relative animate-pop-in">
-            <button onclick="closeEditModal()" class="absolute top-8 right-8 text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+            <button onclick="closeEditModal()" class="absolute top-8 right-8 text-slate-400 hover:text-white">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+            
             <h2 class="text-2xl font-bold text-white mb-8">Editar Unidade</h2>
-            <form id="editForm" onsubmit="saveStoreEdit(event)" class="space-y-5">
+            
+            <form id="editForm" onsubmit="window.saveStoreEdit(event)" class="space-y-5">
                 <input type="hidden" id="editSlug">
-                <input type="text" id="editName" placeholder="Nome da Unidade" required class="input-premium">
-                <select id="editPlan" required class="input-premium bg-slate-800"></select>
-                <input type="email" id="editEmail" placeholder="E-mail Administrativo" required class="input-premium">
-                <input type="number" id="editBillingDay" placeholder="Dia Vencimento" required class="input-premium">
-                <button type="submit" class="w-full py-4.5 bg-indigo-600 text-white font-bold rounded-2xl btn-hover uppercase tracking-widest text-xs">Guardar Alterações</button>
+                
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Nome da Loja</label>
+                    <input type="text" id="editName" placeholder="Nome da Unidade" required class="input-premium">
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Plano (Aplica Benefícios)</label>
+                    <select id="editPlan" required class="input-premium bg-slate-800"></select>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">E-mail Administrativo</label>
+                    <input type="email" id="editEmail" placeholder="E-mail Administrativo" required class="input-premium">
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Dia de Vencimento</label>
+                    <input type="number" id="editBillingDay" placeholder="Dia Vencimento" required class="input-premium">
+                </div>
+
+                <button type="submit" id="btnSaveEdit" class="w-full py-4.5 bg-indigo-600 text-white font-bold rounded-2xl btn-hover uppercase tracking-widest text-xs h-14">
+                    Guardar Alterações
+                </button>
             </form>
         </div>
     </div>
