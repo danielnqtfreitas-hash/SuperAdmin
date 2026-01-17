@@ -173,21 +173,59 @@
                 </div>
 
                 <!-- VIEW: CREATE (Painel de Ativação) -->
-                <div id="view-create" class="hidden animate-fade-in max-w-2xl mx-auto">
-                    <div class="mb-10 text-center"><h2 class="text-3xl font-bold text-white">Ativar Vitrine</h2><p class="text-sm text-slate-500">Criação do acesso administrativo oficial</p></div>
-                    <form id="createStoreForm" class="bg-slate-900 border border-slate-800 p-10 rounded-[3.5rem] space-y-8 shadow-2xl">
-                        <input type="hidden" id="requestId">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="md:col-span-2 space-y-1.5"><label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Plano de Assinatura</label><select id="storePlan" required class="input-premium bg-slate-800"></select></div>
-                            <div class="space-y-1.5"><label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Nome da Loja</label><input type="text" id="storeName" required class="input-premium"></div>
-                            <div class="space-y-1.5"><label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Slug URL (Pasta)</label><input type="text" id="storeSlug" required class="input-premium font-mono"></div>
-                            <div class="space-y-1.5"><label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Email do Lojista</label><input type="email" id="adminEmail" required class="input-premium"></div>
-                            <div class="space-y-1.5"><label class="text-[10px] font-bold text-slate-500 uppercase ml-2">WhatsApp</label><input type="text" id="storePhone" required class="input-premium"></div>
-                            <div class="md:col-span-2 space-y-1.5"><label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Senha de Acesso</label><input type="text" id="adminPass" required class="input-premium font-mono"></div>
-                        </div>
-                        <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-5 rounded-3xl shadow-xl transition-all btn-hover uppercase tracking-widest text-xs">Confirmar e Gerar Acesso</button>
-                    </form>
-                </div>
+                <form id="createStoreForm" class="bg-slate-900 border border-slate-800 p-10 rounded-[3.5rem] space-y-8 shadow-2xl">
+    <input type="hidden" id="requestId">
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="md:col-span-2 space-y-1.5">
+            <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Plano de Assinatura</label>
+            <select id="storePlan" required class="input-premium bg-slate-800"></select>
+        </div>
+
+        <div class="space-y-1.5">
+            <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Data de Vencimento</label>
+            <input type="date" id="createExpiryDate" class="input-premium">
+        </div>
+
+        <div class="space-y-1.5">
+            <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Tipo de Acesso</label>
+            <label class="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl border border-slate-700 cursor-pointer h-[52px]">
+                <span class="text-[10px] font-bold text-slate-300">Marcar como Parceiro Beta?</span>
+                <input type="checkbox" id="createIsBeta" class="w-4 h-4 accent-indigo-500">
+            </label>
+        </div>
+
+        <div class="space-y-1.5">
+            <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Nome da Loja</label>
+            <input type="text" id="storeName" required class="input-premium">
+        </div>
+        
+        <div class="space-y-1.5">
+            <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Slug URL (Pasta)</label>
+            <input type="text" id="storeSlug" required class="input-premium font-mono">
+        </div>
+
+        <div class="space-y-1.5">
+            <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Email do Lojista</label>
+            <input type="email" id="adminEmail" required class="input-premium">
+        </div>
+
+        <div class="space-y-1.5">
+            <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">WhatsApp</label>
+            <input type="text" id="storePhone" required class="input-premium">
+        </div>
+
+        <div class="md:col-span-2 space-y-1.5">
+            <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Senha de Acesso</label>
+            <input type="text" id="adminPass" required class="input-premium font-mono">
+        </div>
+    </div>
+    
+    <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-5 rounded-3xl shadow-xl transition-all btn-hover uppercase tracking-widest text-xs">
+        Confirmar e Gerar Acesso
+    </button>
+</form>
+
 
                 <!-- VIEW: RESULT -->
                 <div id="view-result-view" class="hidden animate-fade-in max-w-md mx-auto text-center space-y-8">
@@ -265,43 +303,53 @@
         </div>
     </div>
 
-    <div id="edit-modal" class="fixed inset-0 z-[160] modal-blur hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-700 rounded-[3rem] max-w-lg w-full p-10 shadow-2xl relative animate-pop-in">
-            <button onclick="closeEditModal()" class="absolute top-8 right-8 text-slate-400 hover:text-white">
-                <i data-lucide="x" class="w-6 h-6"></i>
+<div id="edit-modal" class="fixed inset-0 z-[160] modal-blur hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-[3rem] max-w-lg w-full p-10 shadow-2xl relative animate-pop-in">
+        <button onclick="closeEditModal()" class="absolute top-8 right-8 text-slate-400 hover:text-white">
+            <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+        
+        <h2 class="text-2xl font-bold text-white mb-8">Editar Unidade</h2>
+        
+        <form id="editForm" onsubmit="window.saveStoreEdit(event)" class="space-y-5">
+            <input type="hidden" id="editSlug">
+            
+            <div class="space-y-1.5">
+                <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Nome da Loja</label>
+                <input type="text" id="editName" placeholder="Nome da Unidade" required class="input-premium">
+            </div>
+
+            <div class="space-y-1.5">
+                <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Plano (Aplica Benefícios)</label>
+                <select id="editPlan" required class="input-premium bg-slate-800"></select>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Data de Vencimento</label>
+                    <input type="date" id="editExpiryDate" class="input-premium">
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Status Beta</label>
+                    <label class="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl border border-slate-700 cursor-pointer h-[52px]">
+                        <span class="text-[10px] font-bold text-slate-300">Parceiro Beta?</span>
+                        <input type="checkbox" id="editIsBeta" class="w-4 h-4 accent-indigo-500">
+                    </label>
+                </div>
+            </div>
+
+            <div class="space-y-1.5">
+                <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">E-mail Administrativo</label>
+                <input type="email" id="editEmail" placeholder="E-mail Administrativo" required class="input-premium">
+            </div>
+
+            <button type="submit" id="btnSaveEdit" class="w-full py-4.5 bg-indigo-600 text-white font-bold rounded-2xl btn-hover uppercase tracking-widest text-xs h-14">
+                Guardar Alterações
             </button>
-            
-            <h2 class="text-2xl font-bold text-white mb-8">Editar Unidade</h2>
-            
-            <form id="editForm" onsubmit="window.saveStoreEdit(event)" class="space-y-5">
-                <input type="hidden" id="editSlug">
-                
-                <div class="space-y-1.5">
-                    <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Nome da Loja</label>
-                    <input type="text" id="editName" placeholder="Nome da Unidade" required class="input-premium">
-                </div>
-
-                <div class="space-y-1.5">
-                    <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Plano (Aplica Benefícios)</label>
-                    <select id="editPlan" required class="input-premium bg-slate-800"></select>
-                </div>
-
-                <div class="space-y-1.5">
-                    <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">E-mail Administrativo</label>
-                    <input type="email" id="editEmail" placeholder="E-mail Administrativo" required class="input-premium">
-                </div>
-
-                <div class="space-y-1.5">
-                    <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Dia de Vencimento</label>
-                    <input type="number" id="editBillingDay" placeholder="Dia Vencimento" required class="input-premium">
-                </div>
-
-                <button type="submit" id="btnSaveEdit" class="w-full py-4.5 bg-indigo-600 text-white font-bold rounded-2xl btn-hover uppercase tracking-widest text-xs h-14">
-                    Guardar Alterações
-                </button>
-            </form>
-        </div>
+        </form>
     </div>
+</div>
 
     <script type="module">
         import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -610,83 +658,97 @@
         };
 
                 // --- FORM ACTIONS ---
-        document.getElementById('createStoreForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = e.target.querySelector('button[type="submit"]');
-            btn.disabled = true; 
-            btn.innerHTML = '<span class="animate-pulse">Provisionando Infraestrutura...</span>';
+        // --- Procure o listener do 'createStoreForm' no seu <script> ---
+
+document.getElementById('createStoreForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true; 
+    btn.innerHTML = '<span class="animate-pulse">Provisionando...</span>';
+    
+    const pId = document.getElementById('storePlan').value;
+    const plan = availablePlans.find(p => p.id === pId);
+    
+    // Captura os novos campos
+    const isBetaChecked = document.getElementById('createIsBeta').checked;
+    const expiryValue = document.getElementById('createExpiryDate').value;
+
+    const slug = document.getElementById('storeSlug').value;
+    const email = document.getElementById('adminEmail').value;
+    const pass = document.getElementById('adminPass').value;
+    const name = document.getElementById('storeName').value;
+    const phone = document.getElementById('storePhone').value;
+    const rid = document.getElementById('requestId').value;
+
+    // Cálculo de Data Padrão (Se não preencher, dá 30 dias)
+    let finalExpiry;
+    if (expiryValue) {
+        finalExpiry = new Date(expiryValue + "T12:00:00");
+    } else {
+        const d = new Date();
+        d.setDate(d.getDate() + 30);
+        finalExpiry = d;
+    }
+
+    const secApp = initializeApp(firebaseConfig, "provisioning_app_" + Date.now());
+    const secAuth = getAuth(secApp);
+
+    try {
+        const cred = await createUserWithEmailAndPassword(secAuth, email, pass);
+
+        const storeData = { 
+            storeName: name, 
+            ownerEmail: email, 
+            ownerPhone: phone, 
             
-            const pId = document.getElementById('storePlan').value;
-            const plan = availablePlans.find(p => p.id === pId);
-            const slug = document.getElementById('storeSlug').value;
-            const email = document.getElementById('adminEmail').value;
-            const pass = document.getElementById('adminPass').value;
-            const name = document.getElementById('storeName').value;
-            const phone = document.getElementById('storePhone').value;
-            const rid = document.getElementById('requestId').value;
+            // Lógica Beta vs Plano
+            planId: isBetaChecked ? 'beta_tester' : plan.name,
+            isBeta: isBetaChecked,
+            expiryDate: finalExpiry, // Salva a data de validade
 
-            // Criar uma instância secundária para não deslogar o Super Admin atual
-            const secApp = initializeApp(firebaseConfig, "provisioning_app_" + Date.now());
-            const secAuth = getAuth(secApp);
+            // Benefícios Herdados (Cascata)
+            maxProducts: parseInt(plan.maxProducts), 
+            maxBanners: parseInt(plan.maxBanners),
+            hasCarousel: plan.hasCarousel === true,
+            hasFinance: plan.hasFinance === true,
+            hasMagicCategories: plan.hasMagicCategories === true,
 
-            try {
-                // 1. CRIAR O USUÁRIO NO FIREBASE AUTH (O que faltava)
-                const cred = await createUserWithEmailAndPassword(secAuth, email, pass);
+            status: 'active', 
+            subscriptionStatus: 'active',
+            isStoreOpen: true, 
+            billingDay: 10, 
+            createdAt: serverTimestamp(),
+            lastUpdate: Date.now()
+        };
 
-                // 2. PREPARAR OS DADOS (Com os limites que você adicionou)
-                const storeData = { 
-                    storeName: name, 
-                    ownerEmail: email, 
-                    ownerPhone: phone, 
-                    planId: plan.name, 
-                    maxProducts: parseInt(plan.maxProducts), 
-                    maxBanners: parseInt(plan.maxBanners),
-                    hasCarousel: plan.hasCarousel === true || plan.hasCarousel === "true", 
-                    status: 'active', 
-                    subscriptionStatus: 'active',
-                    isStoreOpen: true, 
-                    billingDay: 10, 
-                    createdAt: serverTimestamp(),
-                    lastUpdate: Date.now()
-                };
+        // Gravações no Firestore
+        await setDoc(doc(db, "stores", slug, "config", "store"), storeData);
+        await setDoc(doc(db, "admin_directory", cred.user.uid), { storeId: slug, role: 'owner' });
+        await setDoc(doc(db, "stores_registry", slug), { ...storeData, slug });
 
-                // 3. SALVAR NO FIRESTORE (Configuração da Loja)
-                await setDoc(doc(db, "stores", slug, "config", "store"), storeData);
-                
-                // 4. VINCULAR O UID AO SLUG DA LOJA
-                await setDoc(doc(db, "admin_directory", cred.user.uid), { 
-                    storeId: slug, 
-                    role: 'owner' 
-                });
+        if(rid) await deleteDoc(doc(db, "registration_requests", rid));
+        
+        // Sucesso e Notificação WhatsApp
+        document.getElementById('resEmail').innerText = email; 
+        document.getElementById('resPass').innerText = pass;
+        document.getElementById('btnWhatsAppNotify').onclick = () => {
+            const msg = `🚀 *Sua Vitrine está ATIVA!*\n\nAcesse: https://danielnqtfreitas-hash.github.io/Painel/\nLogin: ${email}\nSenha: ${pass}\nValidade: ${finalExpiry.toLocaleDateString('pt-BR')}`;
+            window.open(`https://wa.me/${phone.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`,'_blank');
+        };
+        
+        await signOut(secAuth); 
+        await deleteApp(secApp); 
+        switchView('result-view');
 
-                // 5. ATUALIZAR O REGISTRO GLOBAL
-                await setDoc(doc(db, "stores_registry", slug), { ...storeData, slug });
+    } catch (err) { 
+        alert("Erro: " + err.message); 
+        await deleteApp(secApp); 
+    } finally {
+        btn.disabled = false; 
+        btn.innerHTML = 'Confirmar e Gerar Acesso';
+    }
+});
 
-                // 6. LIMPAR SOLICITAÇÃO PENDENTE
-                if(rid) await deleteDoc(doc(db, "registration_requests", rid));
-                
-                // Interface de Sucesso
-                document.getElementById('resEmail').innerText = email; 
-                document.getElementById('resPass').innerText = pass;
-                document.getElementById('btnWhatsAppNotify').onclick = () => {
-                    const msg = `🚀 *Sua Vitrine está ATIVA!*\n\nAcesse seu painel:\nhttps://danielnqtfreitas-hash.github.io/Painel/\n\nLogin: ${email}\nSenha: ${pass}\n\nAbraço e boas vendas!`;
-                    window.open(`https://wa.me/${phone.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`,'_blank');
-                };
-                
-                // Finalização
-                await signOut(secAuth); 
-                await deleteApp(secApp); 
-                switchView('result-view');
-
-            } catch (err) { 
-                console.error(err);
-                alert("Erro de Provisionamento: " + err.message); 
-                await deleteApp(secApp); 
-            } finally {
-                btn.disabled = false; 
-                btn.innerHTML = 'Confirmar e Gerar Acesso';
-            }
-        });
 
 
         window.savePlan = async (e) => {
@@ -823,8 +885,12 @@ window.saveStoreEdit = async (e) => {
     const planIdSelected = document.getElementById('editPlan').value;
     const plan = availablePlans.find(p => p.id === planIdSelected);
 
-    if (!plan) {
-        alert("Selecione um plano válido para aplicar os benefícios.");
+    // Captura os novos campos
+    const isBetaChecked = document.getElementById('editIsBeta').checked;
+    const expiryValue = document.getElementById('editExpiryDate').value;
+
+    if (!plan && !isBetaChecked) {
+        alert("Selecione um plano ou defina como Parceiro Beta.");
         return;
     }
 
@@ -832,14 +898,21 @@ window.saveStoreEdit = async (e) => {
     btn.disabled = true;
     btn.innerHTML = "Sincronizando Benefícios...";
 
-    // 2. Prepara o objeto com a HERANÇA DIRETA do plano
-    // Tudo o que você definiu no molde do plano agora passa para a loja
+    // 2. Prepara o objeto com a HERANÇA do plano + NOVOS CAMPOS
     const data = {
         storeName: document.getElementById('editName').value,
         ownerEmail: document.getElementById('editEmail').value,
-        planId: plan.name,
         
-        // --- BENEFÍCIOS NOVOS (A CASCATA) ---
+        // LÓGICA BETA: Se marcado, o ID vira 'beta_tester', senão usa o nome do plano
+        planId: isBetaChecked ? 'beta_tester' : plan.name,
+        isBeta: isBetaChecked,
+
+        // CONVERSÃO DE DATA: Transforma a string do input em Data para o Firebase
+        // Adicionamos "T12:00:00" para evitar que o fuso horário mude o dia para ontem
+        expiryDate: expiryValue ? new Date(expiryValue + "T12:00:00") : null,
+        
+        // --- BENEFÍCIOS (CASCATA) ---
+        // Mesmo sendo Beta, ele herda os limites do plano selecionado no select
         maxProducts: parseInt(plan.maxProducts) || 0,
         maxBanners: parseInt(plan.maxBanners) || 1,
         hasCarousel: plan.hasCarousel === true,
@@ -851,14 +924,13 @@ window.saveStoreEdit = async (e) => {
     };
 
     try {
-        // 3. Atualiza o Registro Administrativo
+        // 3. Atualiza o Registro Administrativo (Sua lista)
         await updateDoc(doc(db, "stores_registry", slug), data);
 
-        // 4. Atualiza a Configuração Real (Onde o Lojista "escuta" em tempo real)
-        // Isso fará o botão Financeiro aparecer e os limites subirem na hora!
+        // 4. Atualiza a Configuração Real (O que o lojista vê)
         await updateDoc(doc(db, "stores", slug, "config", "store"), data);
         
-        alert(`✅ Sucesso! O plano foi alterado para ${plan.name} e todos os benefícios (Financeiro, Limites e Setores Mágicos) foram liberados.`);
+        alert(`✅ Sucesso! Loja ${data.storeName} atualizada.\nStatus: ${isBetaChecked ? 'Parceiro Beta' : 'Plano ' + plan.name}`);
         closeEditModal();
     } catch (err) {
         console.error("Erro ao sincronizar benefícios:", err);
@@ -869,30 +941,33 @@ window.saveStoreEdit = async (e) => {
     }
 };
 
+
         window.closePlanModal = () => document.getElementById('plan-modal').classList.add('hidden');
         
         window.openEditModal = (s) => {
-    // 1. Preenche os campos básicos de identificação
     document.getElementById('editSlug').value = s.slug || '';
     document.getElementById('editName').value = s.storeName || '';
     document.getElementById('editEmail').value = s.ownerEmail || '';
-    document.getElementById('editBillingDay').value = s.billingDay || 10;
-
-    // 2. Localiza o plano correto no Select
-    // Sendo 's.planId' o nome do plano salvo na loja, buscamos o ID dele no array availablePlans
-    const selectPlan = document.getElementById('editPlan');
-    const matchedPlan = availablePlans.find(pl => pl.name === s.planId);
     
-    if (matchedPlan) {
-        selectPlan.value = matchedPlan.id;
+    // Tratamento da Data para o Input Date
+    if (s.expiryDate) {
+        const d = s.expiryDate.toDate ? s.expiryDate.toDate() : new Date(s.expiryDate);
+        document.getElementById('editExpiryDate').value = d.toISOString().split('T')[0];
     } else {
-        selectPlan.value = ""; // Caso o plano não exista mais ou seja erro
+        document.getElementById('editExpiryDate').value = '';
     }
 
-    // 3. Exibe o modal e atualiza os ícones
+    // Status Beta
+    document.getElementById('editIsBeta').checked = (s.planId === 'beta_tester' || s.isBeta === true);
+
+    const selectPlan = document.getElementById('editPlan');
+    const matchedPlan = availablePlans.find(pl => pl.name === s.planId);
+    if (matchedPlan) selectPlan.value = matchedPlan.id;
+
     document.getElementById('edit-modal').classList.remove('hidden');
-    if (typeof lucide !== 'undefined') lucide.createIcons();
+    lucide.createIcons();
 };
+
 
         window.closeEditModal = () => document.getElementById('edit-modal').classList.add('hidden');
 
