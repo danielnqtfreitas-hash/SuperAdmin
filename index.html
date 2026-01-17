@@ -326,7 +326,7 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="space-y-1.5">
-                    <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Data de Expiração</label>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Data de Vencimento</label>
                     <input type="date" id="editExpiryDate" class="input-premium">
                 </div>
 
@@ -339,15 +339,9 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="space-y-1.5">
-                    <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">E-mail Administrativo</label>
-                    <input type="email" id="editEmail" placeholder="E-mail" required class="input-premium">
-                </div>
-                <div class="space-y-1.5">
-                    <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Dia de Cobrança</label>
-                    <input type="number" id="editBillingDay" placeholder="Ex: 10" required class="input-premium">
-                </div>
+            <div class="space-y-1.5">
+                <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">E-mail Administrativo</label>
+                <input type="email" id="editEmail" placeholder="E-mail Administrativo" required class="input-premium">
             </div>
 
             <button type="submit" id="btnSaveEdit" class="w-full py-4.5 bg-indigo-600 text-white font-bold rounded-2xl btn-hover uppercase tracking-widest text-xs h-14">
@@ -356,7 +350,6 @@
         </form>
     </div>
 </div>
-
 
     <script type="module">
         import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -523,87 +516,67 @@
         }
 
         function buildRowMarkup(s) {
-    const stats = analyticsCache[s.slug] || {day:0, week:0, month:0, total:0};
-    
-    // --- PROTEÇÃO CONTRA ASPAS: Crucial para o modal abrir sempre ---
-    const safeStore = JSON.stringify(s).replace(/'/g, "&apos;");
-    
-    return `
-        <tr class="border-b border-slate-800/50 hover:bg-slate-900/30 transition-all">
-            <td class="px-4 py-6 text-center">
-                <button onclick="toggleStoreDetails('${s.slug}')" class="p-2 hover:bg-slate-800 rounded-lg text-slate-500 transition-transform chevron-rotate" id="btn-exp-${s.slug}">
-                    <i data-lucide="chevron-right" class="w-4 h-4"></i>
-                </button>
-            </td>
-            <td class="px-8 py-6">
-                <div class="flex flex-col">
-                    <span class="font-bold text-white">${s.storeName}</span>
-                    <span class="text-[9px] text-slate-500 font-mono tracking-tighter">${s.slug}</span>
-                </div>
-            </td>
-            <td class="px-8 py-6">
-                <span class="bg-indigo-500/10 text-indigo-400 text-[9px] font-black px-2 py-0.5 rounded border border-indigo-500/20 uppercase">
-                    ${s.planId}
-                </span>
-            </td>
-            <td class="px-8 py-6">
-                <div class="flex items-center gap-3">
-                    <span class="text-white font-black text-sm">${stats.month}</span>
-                    <div class="w-16 h-1 bg-slate-800 rounded-full overflow-hidden">
-                        <div class="bg-indigo-500 h-full" style="width: ${Math.min((stats.month/500)*100, 100)}%"></div>
-                    </div>
-                </div>
-            </td>
-            <td class="px-8 py-6 text-[10px] font-bold uppercase ${s.status === 'active' ? 'text-green-400' : 'text-red-400'}">
-                <div class="flex items-center gap-2">
-                    <span class="w-1.5 h-1.5 rounded-full ${s.status === 'active' ? 'bg-green-400 animate-pulse' : 'bg-red-400'}"></span>
-                    ${s.status}
-                </div>
-            </td>
-            <td class="px-8 py-6 text-right flex gap-3 justify-end">
-                <button onclick='openEditModal(${safeStore})' class="p-2.5 text-indigo-400 hover:bg-indigo-900/30 rounded-xl transition-colors">
-                    <i data-lucide="edit-3" class="w-4 h-4"></i>
-                </button>
-                <button onclick="toggleSuspend('${s.slug}', '${s.status}')" class="p-2.5 ${s.status === 'suspended' ? 'text-green-400' : 'text-slate-500'} hover:bg-slate-800 rounded-xl transition-colors">
-                    <i data-lucide="power" class="w-4 h-4"></i>
-                </button>
-                <button onclick="deleteStore('${s.slug}')" class="p-2.5 text-slate-600 hover:text-red-500 rounded-xl transition-colors">
-                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                </button>
-            </td>
-        </tr>
-        
-        <tr id="details-${s.slug}" class="hidden bg-slate-950/80">
-            <td colspan="6" class="px-12 py-10 border-l-4 border-indigo-600">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 animate-pop-in">
-                    <div class="bg-slate-900 p-5 rounded-3xl border border-slate-800">
-                        <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Hoje</p>
-                        <h4 class="text-3xl font-bold text-white">${stats.day}</h4>
-                    </div>
-                    <div class="bg-slate-900 p-5 rounded-3xl border border-slate-800">
-                        <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Semana</p>
-                        <h4 class="text-3xl font-bold text-indigo-400">${stats.week}</h4>
-                    </div>
-                    <div class="bg-slate-900 p-5 rounded-3xl border border-slate-800">
-                        <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Mês</p>
-                        <h4 class="text-3xl font-bold text-pink-500">${stats.month}</h4>
-                    </div>
-                    <div class="bg-slate-900 p-5 rounded-3xl border border-slate-800">
-                        <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Total Geral</p>
-                        <h4 class="text-3xl font-bold text-indigo-200">${stats.total}</h4>
-                    </div>
-                </div>
-                <div class="mt-6 flex flex-wrap gap-8 text-[10px] text-slate-500 uppercase font-black tracking-widest">
-                    <div class="flex items-center gap-2"><i data-lucide="mail" class="w-3.5 h-3.5"></i> EMAIL: <span class="text-slate-300 font-mono">${s.ownerEmail}</span></div>
-                    <div class="flex items-center gap-2"><i data-lucide="phone" class="w-3.5 h-3.5"></i> WHATSAPP: <span class="text-slate-300 font-mono">${s.ownerPhone || 'N/A'}</span></div>
-                    <div class="flex items-center gap-2"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> VENCIMENTO: <span class="text-slate-300 font-mono">${s.expiryDate ? (s.expiryDate.toDate ? s.expiryDate.toDate().toLocaleDateString('pt-BR') : new Date(s.expiryDate).toLocaleDateString('pt-BR')) : 'Sem Data'}</span></div>
-                    <div class="flex items-center gap-2"><i data-lucide="credit-card" class="w-3.5 h-3.5"></i> DIA COBRANÇA: <span class="text-slate-300 font-mono">DIA ${s.billingDay || 10}</span></div>
-                </div>
-            </td>
-        </tr>
-    `;
-}
-
+            const stats = analyticsCache[s.slug] || {day:0, week:0, month:0, total:0};
+            return `
+                <tr class="border-b border-slate-800/50 hover:bg-slate-900/30 transition-all">
+                    <td class="px-4 py-6 text-center">
+                        <button onclick="toggleStoreDetails('${s.slug}')" class="p-2 hover:bg-slate-800 rounded-lg text-slate-500 transition-transform chevron-rotate" id="btn-exp-${s.slug}">
+                            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                        </button>
+                    </td>
+                    <td class="px-8 py-6">
+                        <div class="flex flex-col">
+                            <span class="font-bold text-white">${s.storeName}</span>
+                            <span class="text-[9px] text-slate-500 font-mono tracking-tighter">${s.slug}</span>
+                        </div>
+                    </td>
+                    <td class="px-8 py-6"><span class="bg-indigo-500/10 text-indigo-400 text-[9px] font-black px-2 py-0.5 rounded border border-indigo-500/20 uppercase">${s.planId}</span></td>
+                    <td class="px-8 py-6">
+                        <div class="flex items-center gap-3">
+                            <span class="text-white font-black text-sm">${stats.month}</span>
+                            <div class="w-16 h-1 bg-slate-800 rounded-full overflow-hidden">
+                                <div class="bg-indigo-500 h-full" style="width: ${Math.min((stats.month/500)*100, 100)}%"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-8 py-6 text-[10px] font-bold uppercase ${s.status === 'active' ? 'text-green-400' : 'text-red-400'}">
+                        <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full ${s.status === 'active' ? 'bg-green-400 animate-pulse' : 'bg-red-400'}"></span>${s.status}</div>
+                    </td>
+                    <td class="px-8 py-6 text-right flex gap-3 justify-end">
+                        <button onclick='openEditModal(${JSON.stringify(s)})' class="p-2.5 text-indigo-400 hover:bg-indigo-900/30 rounded-xl transition-colors"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                        <button onclick="toggleSuspend('${s.slug}', '${s.status}')" class="p-2.5 ${s.status === 'suspended' ? 'text-green-400' : 'text-slate-500'} hover:bg-slate-800 rounded-xl transition-colors"><i data-lucide="power" class="w-4 h-4"></i></button>
+                        <button onclick="deleteStore('${s.slug}')" class="p-2.5 text-slate-600 hover:text-red-500 rounded-xl transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </td>
+                </tr>
+                <tr id="details-${s.slug}" class="hidden bg-slate-950/80">
+                    <td colspan="6" class="px-12 py-10 border-l-4 border-indigo-600">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 animate-pop-in">
+                            <div class="bg-slate-900 p-5 rounded-3xl border border-slate-800">
+                                <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Hoje</p>
+                                <h4 class="text-3xl font-bold text-white">${stats.day}</h4>
+                            </div>
+                            <div class="bg-slate-900 p-5 rounded-3xl border border-slate-800">
+                                <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Semana</p>
+                                <h4 class="text-3xl font-bold text-indigo-400">${stats.week}</h4>
+                            </div>
+                            <div class="bg-slate-900 p-5 rounded-3xl border border-slate-800">
+                                <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Mês</p>
+                                <h4 class="text-3xl font-bold text-pink-500">${stats.month}</h4>
+                            </div>
+                            <div class="bg-slate-900 p-5 rounded-3xl border border-slate-800">
+                                <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Total Geral</p>
+                                <h4 class="text-3xl font-bold text-indigo-200">${stats.total}</h4>
+                            </div>
+                        </div>
+                        <div class="mt-6 flex flex-wrap gap-8 text-[10px] text-slate-500 uppercase font-black tracking-widest">
+                            <div class="flex items-center gap-2"><i data-lucide="mail" class="w-3.5 h-3.5"></i> EMAIL: <span class="text-slate-300 font-mono">${s.ownerEmail}</span></div>
+                            <div class="flex items-center gap-2"><i data-lucide="phone" class="w-3.5 h-3.5"></i> WHATSAPP: <span class="text-slate-300 font-mono">${s.ownerPhone || 'N/A'}</span></div>
+                            <div class="flex items-center gap-2"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> VENCIMENTO: <span class="text-slate-300 font-mono">DIA ${s.billingDay || 10}</span></div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
 
         // --- PLANOS UI ---
         function renderPlansUI() {
@@ -1060,6 +1033,4 @@ window.showToast = (msg) => {
 
     </script>
 </body>
-</html>
-
-
+</html> 
