@@ -778,37 +778,35 @@ document.getElementById('createStoreForm').addEventListener('submit', async (e) 
 
 
         window.savePlan = async (e) => {
-    e.preventDefault(); // Impede a página de recarregar
-    
+    e.preventDefault(); 
     const id = document.getElementById('planId').value || 'plan_' + Date.now();
     const btn = document.getElementById('btnSavePlan');
     btn.disabled = true;
 
-    // 1. Aqui nós capturamos os valores dos campos do formulário
     const planData = {
         name: document.getElementById('planName').value,
         price: parseFloat(document.getElementById('planPrice').value) || 0,
         maxProducts: parseInt(document.getElementById('planMaxProducts').value) || 0,
         maxBanners: parseInt(document.getElementById('planMaxBanners').value) || 0,
         
-        // ESTES SÃO OS NOVOS CAMPOS (OS CHECKBOXES)
+        // Garantindo que os nomes batam com o que o sistema espera
         hasCarousel: document.getElementById('planHasCarousel').checked,
         hasFinance: document.getElementById('planHasFinance').checked,
-        hasMagicCategories: document.getElementById('planHasMagic').checked,
+        hasMagicCategories: document.getElementById('planHasMagic').checked, // Nome correto aqui
         
-        features: document.getElementById('planFeatures').value, // Descrição que aparece no registro
+        features: document.getElementById('planFeatures').value,
         updatedAt: Date.now()
     };
 
     try {
-        // 2. Salvamos na coleção de planos públicos
-        await setDoc(doc(db, "public_plans", id), planData);
+        // CORREÇÃO AQUI: Salvar em config_plans (a fonte mestre do admin)
+        await setDoc(doc(db, "config_plans", id), planData);
         
-        alert("Plano configurado com sucesso! Agora as lojas que assinarem este plano herdarão estas travas.");
-        closePlanModal(); // Fecha o modal de criação de planos
+        alert("Plano salvo com sucesso no painel administrativo!");
+        closePlanModal();
     } catch (error) {
-        console.error("Erro ao salvar plano:", error);
-        alert("Erro ao salvar o plano.");
+        console.error(error);
+        alert("Erro ao salvar.");
     } finally {
         btn.disabled = false;
     }
