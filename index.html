@@ -861,38 +861,43 @@ document.getElementById('createStoreForm').addEventListener('submit', async (e) 
         window.closePlanModal = () => document.getElementById('plan-modal').classList.add('hidden');
         
         window.openEditModal = (slug) => {
-    // 1. Localiza a loja na nossa lista global
     const s = allStores.find(item => item.slug === slug);
-    
     if (!s) {
         alert("Loja não encontrada.");
         return;
     }
 
-    // 2. Preenche os campos do modal
+    // Preenche campos básicos
     document.getElementById('editSlug').value = s.slug || '';
     document.getElementById('editName').value = s.storeName || '';
     document.getElementById('editEmail').value = s.ownerEmail || '';
+    document.getElementById('editBillingDay').value = s.billingDay || 10;
     
-    const elBilling = document.getElementById('editBillingDay');
-    if(elBilling) elBilling.value = s.billingDay || 10;
-    
-    // 3. Tratamento da Data (Agora funciona com ou sem data)
+    // Ajuste da Data
     if (s.expiryDate) {
         const d = s.expiryDate.toDate ? s.expiryDate.toDate() : new Date(s.expiryDate);
         document.getElementById('editExpiryDate').value = d.toISOString().split('T')[0];
-    } else {
-        document.getElementById('editExpiryDate').value = '';
     }
 
-    // 4. Status Beta e Plano
-    document.getElementById('editIsBeta').checked = (s.planId === 'beta_tester' || s.isBeta === true);
-    
+    // --- O AJUSTE DO PLANO ---
     const selectPlan = document.getElementById('editPlan');
-    const matchedPlan = availablePlans.find(pl => pl.name === s.planId);
-    if (matchedPlan) selectPlan.value = matchedPlan.id;
+    const isBeta = s.planId === 'beta_tester' || s.isBeta === true;
+    document.getElementById('editIsBeta').checked = isBeta;
 
-    // 5. Abre o modal
+    // BUSCA INTELIGENTE: Procura o plano que tenha o mesmo NOME ou ID salvo na loja
+    const matchedPlan = availablePlans.find(pl => 
+        pl.id === s.planId || pl.name === s.planId
+    );
+
+    if (isBeta) {
+        selectPlan.value = ""; // Se for beta, o plano fica vazio ou neutro
+    } else if (matchedPlan) {
+        // Seleciona o ID correto no HTML para o select marcar a opção certa
+        selectPlan.value = matchedPlan.id; 
+    } else {
+        selectPlan.value = ""; 
+    }
+
     document.getElementById('edit-modal').classList.remove('hidden');
     if (typeof lucide !== 'undefined') lucide.createIcons();
 };
