@@ -877,79 +877,19 @@ document.getElementById('createStoreForm').addEventListener('submit', async (e) 
     lucide.createIcons();
 };
 
-window.saveStoreEdit = async (e) => {
-    e.preventDefault();
 
-    // 1. Localiza a loja e o plano selecionado
-    const slug = document.getElementById('editSlug').value;
-    const planIdSelected = document.getElementById('editPlan').value;
-    const plan = availablePlans.find(p => p.id === planIdSelected);
-
-    // Captura os novos campos
-    const isBetaChecked = document.getElementById('editIsBeta').checked;
-    const expiryValue = document.getElementById('editExpiryDate').value;
-
-    if (!plan && !isBetaChecked) {
-        alert("Selecione um plano ou defina como Parceiro Beta.");
-        return;
-    }
-
-    const btn = e.target.querySelector('button[type="submit"]');
-    btn.disabled = true;
-    btn.innerHTML = "Sincronizando Benefícios...";
-
-    // 2. Prepara o objeto com a HERANÇA do plano + NOVOS CAMPOS
-    const data = {
-        storeName: document.getElementById('editName').value,
-        ownerEmail: document.getElementById('editEmail').value,
-        
-        // LÓGICA BETA: Se marcado, o ID vira 'beta_tester', senão usa o nome do plano
-        planId: isBetaChecked ? 'beta_tester' : plan.name,
-        isBeta: isBetaChecked,
-
-        // CONVERSÃO DE DATA: Transforma a string do input em Data para o Firebase
-        // Adicionamos "T12:00:00" para evitar que o fuso horário mude o dia para ontem
-        expiryDate: expiryValue ? new Date(expiryValue + "T12:00:00") : null,
-        
-        // --- BENEFÍCIOS (CASCATA) ---
-        // Mesmo sendo Beta, ele herda os limites do plano selecionado no select
-        maxProducts: parseInt(plan.maxProducts) || 0,
-        maxBanners: parseInt(plan.maxBanners) || 1,
-        hasCarousel: plan.hasCarousel === true,
-        hasFinance: plan.hasFinance === true,
-        hasMagicCategories: plan.hasMagicCategories === true,
-        
-        billingDay: parseInt(document.getElementById('editBillingDay').value) || 10,
-        lastUpdate: Date.now()
-    };
-
-    try {
-        // 3. Atualiza o Registro Administrativo (Sua lista)
-        await updateDoc(doc(db, "stores_registry", slug), data);
-
-        // 4. Atualiza a Configuração Real (O que o lojista vê)
-        await updateDoc(doc(db, "stores", slug, "config", "store"), data);
-        
-        alert(`✅ Sucesso! Loja ${data.storeName} atualizada.\nStatus: ${isBetaChecked ? 'Parceiro Beta' : 'Plano ' + plan.name}`);
-        closeEditModal();
-    } catch (err) {
-        console.error("Erro ao sincronizar benefícios:", err);
-        alert("Erro ao atualizar unidade: " + err.message);
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = "Guardar Alterações";
-    }
-};
 
 
         window.closePlanModal = () => document.getElementById('plan-modal').classList.add('hidden');
         
         window.openEditModal = (s) => {
+    // 1. Limpa e preenche os campos básicos
     document.getElementById('editSlug').value = s.slug || '';
     document.getElementById('editName').value = s.storeName || '';
     document.getElementById('editEmail').value = s.ownerEmail || '';
+    document.getElementById('editBillingDay').value = s.billingDay || 10;
     
-    // Tratamento da Data para o Input Date
+    // 2. Tratamento da Data (Conversão do Firebase para o Input)
     if (s.expiryDate) {
         const d = s.expiryDate.toDate ? s.expiryDate.toDate() : new Date(s.expiryDate);
         document.getElementById('editExpiryDate').value = d.toISOString().split('T')[0];
@@ -957,15 +897,80 @@ window.saveStoreEdit = async (e) => {
         document.getElementById('editExpiryDate').value = '';
     }
 
-    // Status Beta
+    // 3. Status Beta
     document.getElementById('editIsBeta').checked = (s.planId === 'beta_tester' || s.isBeta === true);
 
+    // 4. Seleciona o Plano no Dropdown
     const selectPlan = document.getElementById('editPlan');
     const matchedPlan = availablePlans.find(pl => pl.name === s.planId);
-    if (matchedPlan) selectPlan.value = matchedPlan.id;
+    if (matchedPlan) {
+        selectPlan.value = matchedPlan.id;
+    } else {
+        selectPlan.value = ""; // Caso seja beta sem plano definido
+    }
 
     document.getElementById('edit-modal').classList.remove('hidden');
-    lucide.createIcons();
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+};
+
+window.saveStoreEdit = async (e) => {
+    e.preventDefault();
+
+    const slug = document.getElementById('editSlug').value;
+    const planIdSelected = document.getElementById('editPlan').value;
+    const plan = availablePlans.find(p => p.id === planIdSelected);
+
+    const isBetaChecked = document.getElementById('editIsBeta').checked;
+    const expiryValue = document.getElementById('editExpiryDate').value;
+
+    // Se não for Beta, OBRIGATÓRIO ter um plano
+    if (!isBetaChecked && !plan) {
+        alert("Por favor, selecione um plano para esta loja.");
+        return;
+    }
+
+    const btn = e.target.querySelector('button[type="submit"]');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = "Sincronizando...";
+
+    try {
+        // Criamos o objeto de dados com proteções (Fallback)
+        // Se for beta e não tiver plano, damos limites altos por padrão
+        const data = {
+            storeName: document.getElementById('editName').value,
+            ownerEmail: document.getElementById('editEmail').value,
+            planId: isBetaChecked ? 'beta_tester' : (plan ? plan.name : 'padrão'),
+            isBeta: isBetaChecked,
+            
+            // Converte Data
+            expiryDate: expiryValue ? new Date(expiryValue + "T12:00:00") : null,
+            
+            // Limites (usa o plano se existir, senão usa padrão de 999 para Beta)
+            maxProducts: plan ? parseInt(plan.maxProducts) : 999,
+            maxBanners: plan ? parseInt(plan.maxBanners) : 5,
+            hasCarousel: plan ? (plan.hasCarousel === true) : true,
+            hasFinance: plan ? (plan.hasFinance === true) : true,
+            hasMagicCategories: plan ? (plan.hasMagicCategories === true) : true,
+            
+            billingDay: parseInt(document.getElementById('editBillingDay').value) || 10,
+            lastUpdate: Date.now()
+        };
+
+        // 3. Gravação Dupla (Registro e Config da Loja)
+        await updateDoc(doc(db, "stores_registry", slug), data);
+        await updateDoc(doc(db, "stores", slug, "config", "store"), data);
+        
+        alert("✅ Loja atualizada com sucesso!");
+        closeEditModal();
+    } catch (err) {
+        console.error("Erro na sincronização:", err);
+        alert("Erro ao salvar alterações. Verifique sua conexão.");
+    } finally {
+        // SEMPRE devolve o botão ao estado original
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
 };
 
 
