@@ -527,9 +527,6 @@
         function buildRowMarkup(s) {
     const stats = analyticsCache[s.slug] || {day:0, week:0, month:0, total:0};
     
-    // --- PROTEÇÃO CONTRA ASPAS: Crucial para o modal abrir sempre ---
-    const safeStore = JSON.stringify(s).replace(/'/g, "&apos;");
-    
     return `
         <tr class="border-b border-slate-800/50 hover:bg-slate-900/30 transition-all">
             <td class="px-4 py-6 text-center">
@@ -563,7 +560,7 @@
                 </div>
             </td>
             <td class="px-8 py-6 text-right flex gap-3 justify-end">
-                <button onclick='openEditModal(${safeStore})' class="p-2.5 text-indigo-400 hover:bg-indigo-900/30 rounded-xl transition-colors">
+                <button onclick="openEditModal('${s.slug}')" class="p-2.5 text-indigo-400 hover:bg-indigo-900/30 rounded-xl transition-colors">
                     <i data-lucide="edit-3" class="w-4 h-4"></i>
                 </button>
                 <button onclick="toggleSuspend('${s.slug}', '${s.status}')" class="p-2.5 ${s.status === 'suspended' ? 'text-green-400' : 'text-slate-500'} hover:bg-slate-800 rounded-xl transition-colors">
@@ -604,7 +601,7 @@
             </td>
         </tr>
     `;
-}
+        }
 
         
         // --- PLANOS UI ---
@@ -865,15 +862,24 @@ document.getElementById('createStoreForm').addEventListener('submit', async (e) 
 
         window.closePlanModal = () => document.getElementById('plan-modal').classList.add('hidden');
         
-        window.openEditModal = (s) => {
-    // Check de segurança: se o elemento não existir, ele não trava a função
-    const elBilling = document.getElementById('editBillingDay');
+        window.openEditModal = (slug) => {
+    // 1. Localiza a loja na nossa lista global
+    const s = allStores.find(item => item.slug === slug);
     
+    if (!s) {
+        alert("Loja não encontrada.");
+        return;
+    }
+
+    // 2. Preenche os campos do modal
     document.getElementById('editSlug').value = s.slug || '';
     document.getElementById('editName').value = s.storeName || '';
     document.getElementById('editEmail').value = s.ownerEmail || '';
+    
+    const elBilling = document.getElementById('editBillingDay');
     if(elBilling) elBilling.value = s.billingDay || 10;
     
+    // 3. Tratamento da Data (Agora funciona com ou sem data)
     if (s.expiryDate) {
         const d = s.expiryDate.toDate ? s.expiryDate.toDate() : new Date(s.expiryDate);
         document.getElementById('editExpiryDate').value = d.toISOString().split('T')[0];
@@ -881,15 +887,18 @@ document.getElementById('createStoreForm').addEventListener('submit', async (e) 
         document.getElementById('editExpiryDate').value = '';
     }
 
+    // 4. Status Beta e Plano
     document.getElementById('editIsBeta').checked = (s.planId === 'beta_tester' || s.isBeta === true);
-
+    
     const selectPlan = document.getElementById('editPlan');
     const matchedPlan = availablePlans.find(pl => pl.name === s.planId);
     if (matchedPlan) selectPlan.value = matchedPlan.id;
 
+    // 5. Abre o modal
     document.getElementById('edit-modal').classList.remove('hidden');
     if (typeof lucide !== 'undefined') lucide.createIcons();
 };
+
 
 window.saveStoreEdit = async (e) => {
     e.preventDefault();
