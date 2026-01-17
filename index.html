@@ -605,24 +605,60 @@
 
         
         // --- PLANOS UI ---
-        function renderPlansUI() {
-            document.getElementById('plansGrid').innerHTML = availablePlans.map(p => `
-                <div class="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] flex flex-col h-full shadow-lg relative overflow-hidden">
-                    <div class="absolute top-0 right-0 bg-indigo-600/20 text-indigo-400 px-4 py-1 text-[8px] font-black uppercase tracking-widest rounded-bl-xl">${p.hasCarousel ? 'Com Carrossel' : 'Sem Carrossel'}</div>
-                    <h3 class="font-bold text-white text-xl mb-1">${p.name}</h3>
-                    <span class="text-pink-500 text-xs font-black uppercase mb-6">${formatBRL(p.price)} / mês</span>
-                    <div class="space-y-3 mb-8 flex-1">
-                        <div class="flex items-center gap-2 text-[10px] text-slate-400 font-bold uppercase"><i data-lucide="package" class="w-3.5 h-3.5"></i> ${p.maxProducts} Produtos</div>
-                        <div class="flex items-center gap-2 text-[10px] text-slate-400 font-bold uppercase"><i data-lucide="layout" class="w-3.5 h-3.5"></i> ${p.maxBanners} Banners</div>
-                        <div class="pt-4 border-t border-slate-800 text-[10px] text-slate-500 leading-relaxed">${(p.features || '').split('\n').map(f => `• ${f}`).join('<br>')}</div>
+function renderPlansUI() {
+    const plansGrid = document.getElementById('plansGrid');
+    if (!plansGrid) return;
+
+    plansGrid.innerHTML = availablePlans.map(p => {
+        // Criamos badges para as funções PRO
+        const badgeFinance = p.hasFinance ? 
+            `<div class="flex items-center gap-1.5 text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-lg border border-emerald-500/20"><i data-lucide="dollar-sign" class="w-3 h-3"></i> FINANCEIRO</div>` : '';
+        
+        const badgeMagic = p.hasMagicCategories ? 
+            `<div class="flex items-center gap-1.5 text-[9px] font-bold text-amber-400 bg-amber-500/10 px-2 py-1 rounded-lg border border-amber-500/20"><i data-lucide="sparkles" class="w-3 h-3"></i> MÁGICAS</div>` : '';
+
+        return `
+            <div class="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] flex flex-col h-full shadow-lg relative overflow-hidden">
+                <div class="absolute top-0 right-0 bg-indigo-600/20 text-indigo-400 px-4 py-1 text-[8px] font-black uppercase tracking-widest rounded-bl-xl">
+                    ${p.hasCarousel ? 'Com Carrossel' : 'Sem Carrossel'}
+                </div>
+
+                <h3 class="font-bold text-white text-xl mb-1">${p.name}</h3>
+                <span class="text-pink-500 text-xs font-black uppercase mb-6">${formatBRL(p.price)} / mês</span>
+                
+                <div class="flex flex-wrap gap-2 mb-6">
+                    ${badgeFinance}
+                    ${badgeMagic}
+                </div>
+
+                <div class="space-y-3 mb-8 flex-1">
+                    <div class="flex items-center gap-2 text-[10px] text-slate-400 font-bold uppercase">
+                        <i data-lucide="package" class="w-3.5 h-3.5"></i> ${p.maxProducts} Produtos
                     </div>
-                    <div class="flex gap-2 pt-6 border-t border-slate-800">
-                        <button onclick='openPlanModal(${JSON.stringify(p)})' class="flex-1 bg-slate-800 hover:bg-slate-700 text-[10px] font-black uppercase py-3 rounded-2xl transition-all">Editar</button>
-                        <button onclick="deletePlan('${p.id}')" class="p-3 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-2xl transition-all"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    <div class="flex items-center gap-2 text-[10px] text-slate-400 font-bold uppercase">
+                        <i data-lucide="layout" class="w-3.5 h-3.5"></i> ${p.maxBanners} Banners
                     </div>
-                </div>`).join('');
-            lucide.createIcons();
-        }
+                    <div class="pt-4 border-t border-slate-800 text-[10px] text-slate-500 leading-relaxed">
+                        ${(p.features || '').split('\n').map(f => `• ${f}`).join('<br>')}
+                    </div>
+                </div>
+
+                <div class="flex gap-2 pt-6 border-t border-slate-800">
+                    <button onclick='openPlanModal(${JSON.stringify(p).replace(/'/g, "&apos;")})' 
+                            class="flex-1 bg-slate-800 hover:bg-slate-700 text-[10px] font-black uppercase py-3 rounded-2xl transition-all">
+                        Editar
+                    </button>
+                    <button onclick="deletePlan('${p.id}')" 
+                            class="p-3 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-2xl transition-all">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>`;
+    }).join('');
+    
+    lucide.createIcons();
+}
+
 
         // --- SOLICITAÇÕES UI ---
         function renderRequests(list) {
@@ -862,45 +898,42 @@ document.getElementById('createStoreForm').addEventListener('submit', async (e) 
         
         window.openEditModal = (slug) => {
     const s = allStores.find(item => item.slug === slug);
-    if (!s) {
-        alert("Loja não encontrada.");
-        return;
-    }
+    if (!s) return alert("Loja não encontrada.");
 
-    // Preenche campos básicos
     document.getElementById('editSlug').value = s.slug || '';
     document.getElementById('editName').value = s.storeName || '';
     document.getElementById('editEmail').value = s.ownerEmail || '';
     document.getElementById('editBillingDay').value = s.billingDay || 10;
     
-    // Ajuste da Data
     if (s.expiryDate) {
         const d = s.expiryDate.toDate ? s.expiryDate.toDate() : new Date(s.expiryDate);
         document.getElementById('editExpiryDate').value = d.toISOString().split('T')[0];
     }
 
-    // --- O AJUSTE DO PLANO ---
     const selectPlan = document.getElementById('editPlan');
-    const isBeta = s.planId === 'beta_tester' || s.isBeta === true;
+    const isBeta = (s.planId === 'beta_tester' || s.isBeta === true);
     document.getElementById('editIsBeta').checked = isBeta;
 
-    // BUSCA INTELIGENTE: Procura o plano que tenha o mesmo NOME ou ID salvo na loja
+    // BUSCA ROBUSTA: Tira espaços e ignora maiúsculas/minúsculas
     const matchedPlan = availablePlans.find(pl => 
-        pl.id === s.planId || pl.name === s.planId
+        pl.id === s.planId || 
+        pl.name.trim().toLowerCase() === String(s.planId).trim().toLowerCase()
     );
 
     if (isBeta) {
-        selectPlan.value = ""; // Se for beta, o plano fica vazio ou neutro
+        selectPlan.value = ""; 
     } else if (matchedPlan) {
-        // Seleciona o ID correto no HTML para o select marcar a opção certa
+        // Aqui está o segredo: selecionamos pelo ID que o renderPlanSelects gerou
         selectPlan.value = matchedPlan.id; 
     } else {
-        selectPlan.value = ""; 
+        // Se não achar nada, volta para a primeira opção (Selecione...) em vez de ficar em branco
+        selectPlan.selectedIndex = 0;
     }
 
     document.getElementById('edit-modal').classList.remove('hidden');
     if (typeof lucide !== 'undefined') lucide.createIcons();
 };
+
 
 
 window.saveStoreEdit = async (e) => {
